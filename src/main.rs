@@ -1,61 +1,30 @@
-use std::fs::File;
-use std::io::{self, BufRead, BufReader};
+use ratatui::{DefaultTerminal, Frame};
 
-use chrono::{DateTime, Local, Utc};
-use uuid::Uuid;
+mod model;
+mod view;
 
-enum Tag {
-    Fun,
-    Dev,
-    Uni,
-    Work,
+use model::task::Task;
+use view::taskWidget::TaskWidget;
 
-    Other(String),
+use crate::view::taskWidget::TaskApp;
+
+fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
+    ratatui::run(|terminal| TaskApp::new().run(terminal))?;
+    Ok(())
 }
 
-struct Task {
-    name: String,
-    description: String,
-    subtasks: Vec<Task>,
-    sessions: Vec<DateTime<Local>>,
-    in_session: bool,
-    uuid: Uuid,
-    priority: u8,
-    tags: Vec<Tag>,
-    created_at: DateTime<Local>,
-    ended_at: Option<DateTime<Local>>,
-    completed: bool,
-}
+// fn app(terminal: &mut DefaultTerminal) -> std::io::Result<()> {
+//     loop {
+//         terminal.draw(render)?;
+//         if crossterm::event::read()?.is_key_press() {
+//             break Ok(());
+//         }
+//     }
+// }
 
-impl Task {
-    fn new() -> Self {
-        Task {
-            name: String::new(),
-            description: String::new(),
-            subtasks: Vec::new(),
-            sessions: Vec::new(),
-            in_session: false,
-            uuid: Uuid::nil(),
-            priority: 0,
-            tags: Vec::new(),
-            created_at: Local::now(),
-            ended_at: None,
-            completed: false,
-        }
-    }
-
-    fn add_subtask(&mut self, subtask: Task) {
-        self.subtasks.push(subtask);
-    }
-
-}
-
-fn main() {
-    let t0 = Task::new();
-
-    let mut t1 = Task::new();
-    t1.add_subtask(t0);
-
-    dbg!("{t}");
-    dbg!("{t0}");
-}
+// fn render(frame: &mut Frame) {
+//     let task = Task::new("My Task".to_string(), "This is a sample task.".to_string());
+//     let task_widget = TaskWidget::new(task);
+//     frame.render_widget(task_widget, frame.area());
+// }
