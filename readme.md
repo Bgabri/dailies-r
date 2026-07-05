@@ -30,3 +30,13 @@
 - [ ] consistent errors
 
 - [ ] interactive
+
+
+
+==============
+
+basic: 
+add new
+edit name and desc
+pause and play
+complete
