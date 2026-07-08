@@ -1,1 +1,1 @@
-pub mod taskWidget;
+pub mod task_widget;

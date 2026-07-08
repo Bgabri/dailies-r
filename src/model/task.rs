@@ -23,7 +23,6 @@ pub struct Task {
     pub completed: Option<bool>,
 
     pub sessions: Vec<Session>,
-    pub in_session: bool,
 
     pub goals: Vec<Goal>,
     pub tags: Vec<TaskTag>,
@@ -41,7 +40,6 @@ impl Task {
             ended_at: None,
             completed: None,
             sessions: Vec::new(),
-            in_session: false,
             goals: Vec::new(),
             tags: Vec::new(),
             subtasks: Vec::new(),
@@ -52,6 +50,40 @@ impl Task {
     pub fn add_subtask(&mut self, subtask: Task) {
         self.subtasks.push(subtask);
     }
+    pub fn in_session(&self) -> bool {
+        if let Some(session) = self.sessions.last() {
+            session.end.is_none()
+        } else {
+            false
+        }
+    }
+
+    fn start_session(&mut self) {
+        if self.in_session() {
+            return;
+        }
+        let session = Session {
+            start: chrono::Local::now(),
+            end: None,
+        };
+        self.sessions.push(session);
+    }
+
+    fn end_session(&mut self) {
+        if let Some(session) = self.sessions.last_mut() {
+            session.end = Some(chrono::Local::now());
+        }
+    }
+
+    pub fn track(&mut self) -> bool {
+        if self.in_session() {
+            self.end_session();
+            false
+        } else {
+            self.start_session();
+            true
+        }
+    }
 
     pub fn to_string(&self) -> String {
         let mut out = format!("Task: {}", self.name);
@@ -60,8 +92,58 @@ impl Task {
         }
         out
     }
-}
 
+    pub fn iter_tree(&self, depth: i32, f: fn(&Task, depth: i32) -> bool) {
+        if !f(self, depth) {
+            return;
+        }
+        for subtask in &self.subtasks {
+            subtask.iter_tree(depth + 1, f);
+        }
+    }
+
+    pub fn flatten(&self) -> Vec<&Task> {
+        let mut tasks = vec![self];
+        for subtask in &self.subtasks {
+            tasks.extend(subtask.flatten());
+        }
+        tasks
+    }
+
+    pub fn get_subtask(&self, ids: &[uuid::Uuid]) -> Option<&Task> {
+        if ids.len() == 0 {
+            return None;
+        }
+        if ids.last().expect("ids is empty") == &self.id {
+            return Some(self);
+        }
+
+        for subtask in &self.subtasks {
+            if let Some(task) = subtask.get_subtask(ids) {
+                return Some(task);
+            }
+        }
+
+        None
+    }
+
+    pub fn get_subtask_mut(&mut self, ids: &[uuid::Uuid]) -> Option<&mut Task> {
+        if ids.len() == 0 {
+            return None;
+        }
+        if ids.last().expect("ids is empty") == &self.id {
+            return Some(self);
+        }
+
+        for subtask in &mut self.subtasks {
+            if let Some(task) = subtask.get_subtask_mut(ids) {
+                return Some(task);
+            }
+        }
+
+        None
+    }
+}
 
 impl Debug for Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -73,16 +155,11 @@ impl PartialEq for Task {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
     }
-    
 }
-impl Eq for Task {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.id == other.id
-//     }
-}
+impl Eq for Task {}
 
 impl hash::Hash for Task {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.id;
+        self.id.hash(state);
     }
 }

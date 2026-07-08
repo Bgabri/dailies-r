@@ -4,44 +4,27 @@ use crossterm::event::{self, Event, KeyCode, KeyEventKind, MouseEventKind};
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
-    layout::{Constraint, Flex, Layout, Position, Rect},
+    layout::{Position, Rect},
     style::{Color, Modifier, Style},
     symbols::border,
-    text::{Line, Span},
-    widgets::{Block, BorderType, Borders, List, StatefulWidget, Widget},
+    text::{Line},
+    widgets::{Block, StatefulWidget, Widget},
 };
 use tui_tree_widget::{Tree, TreeItem, TreeState};
+use uuid::Uuid;
 
-use crate::model::task::Task;
-
-pub struct TaskWidget<'a> {
-    task: &'a Task,
-}
-
-impl<'a> TaskWidget<'a> {
-    pub fn new(task: &'a Task) -> Self {
-        TaskWidget { task }
-    }
-}
-
-impl<'a> Widget for TaskWidget<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let name = Span::styled(self.task.name.clone(), Modifier::BOLD);
-        let description = Span::raw(&self.task.description);
-        let line = Line::from(vec![name, description]);
-        line.render(area, buf);
-    }
-}
+use crate::model::{task::Task, tasks_manager::TasksManager};
 
 pub struct TasksList<'a> {
-    state: TreeState<&'a Task>,
-    items: Vec<TreeItem<'a, &'a Task>>,
+    tasks_manager: &'a mut TasksManager,
+    state: TreeState<Uuid>,
+    items: Vec<TreeItem<'a, Uuid>>,
 }
 
 impl<'a> TasksList<'a> {
-    fn tasks_tree(task: &Task) -> Result<TreeItem<'a, &Task>, std::io::Error> {
+    fn tasks_tree(task: &Task) -> Result<TreeItem<'a, Uuid>, std::io::Error> {
         if task.subtasks.len() == 0 {
-            return Ok(TreeItem::new_leaf(&task, task.name.clone()));
+            return Ok(TreeItem::new_leaf(task.id, task.name.clone()));
         }
 
         let mut items = Vec::new();
@@ -49,12 +32,12 @@ impl<'a> TasksList<'a> {
             let item = Self::tasks_tree(sub_task)?;
             items.push(item);
         }
-        return TreeItem::new(&task, task.name.clone(), items);
+        return TreeItem::new(task.id, task.name.clone(), items);
     }
 
-    pub fn new(tasks: &'a Vec<Task>) -> Self {
-        let mut items: Vec<TreeItem<'a, &'a Task>> = Vec::new();
-        for task in tasks {
+    pub fn new(tasks_manager: &'a mut TasksManager) -> Self {
+        let mut items: Vec<TreeItem<'a, Uuid>> = Vec::new();
+        for task in tasks_manager.get_tasks() {
             let item = Self::tasks_tree(task).expect("duplicate tasks found");
             items.push(item);
         }
@@ -62,7 +45,19 @@ impl<'a> TasksList<'a> {
         Self {
             state: TreeState::default(),
             items,
+            tasks_manager,
         }
+    }
+
+    fn get_selected_task(&mut self) -> Option<&mut Task> {
+        let selected = self.state.selected();
+        // return selected.last().and_then(|t| Some(*t));
+        return self.tasks_manager.get_task_mut(selected);
+    }
+
+    fn track_selected(&mut self) -> bool {
+        let selected = self.get_selected_task().expect("asd");
+        selected.track()
     }
 
     fn handle_mouse_event(&mut self, mouse_event: event::MouseEvent) {
@@ -84,7 +79,8 @@ impl<'a> TasksList<'a> {
         //     );
         // }
         match key_event.code {
-            KeyCode::Enter | KeyCode::Char('\n' | ' ') => self.state.toggle_selected(),
+            KeyCode::Char('p' | ' ') => self.track_selected(),
+            KeyCode::Enter | KeyCode::Char('\n') => self.state.toggle_selected(),
             KeyCode::Left => self.state.key_left(),
             KeyCode::Right => self.state.key_right(),
             KeyCode::Down => self.state.key_down(),
@@ -118,17 +114,17 @@ impl Widget for &mut TasksList<'_> {
 
 pub struct TaskApp<'a> {
     title: String,
-    tasks: &'a Vec<Task>,
+    // task_manager: &'a mut TasksManager,
     exit: bool,
     tasks_list: TasksList<'a>,
 }
 
 impl<'a> TaskApp<'a> {
-    pub fn new(tasks: &'a Vec<Task>) -> Self {
+    pub fn new(task_manager: &'a mut TasksManager) -> Self {
         TaskApp {
             title: "Task Manager".to_string(),
-            tasks,
-            tasks_list: TasksList::new(tasks),
+            // task_manager,
+            tasks_list: TasksList::new(task_manager),
             exit: false,
         }
     }
@@ -152,7 +148,7 @@ impl<'a> TaskApp<'a> {
     fn handle_events(&mut self) -> io::Result<()> {
         match event::read()? {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                if (key_event.code == KeyCode::Char('q') || key_event.code == KeyCode::Esc) {
+                if key_event.code == KeyCode::Char('q') || key_event.code == KeyCode::Esc {
                     self.exit();
                 }
                 self.tasks_list.handle_key_event(key_event)
@@ -166,8 +162,18 @@ impl<'a> TaskApp<'a> {
 
 impl<'a> Widget for &mut TaskApp<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        // let instructions = Line::from(vec![
+        //     " Decrement ".into(),
+        //     "<Left>".blue().bold(),
+        //     " Increment ".into(),
+        //     "<Right>".blue().bold(),
+        //     " Quit ".into(),
+        //     "<Q> ".blue().bold(),
+        // ]);
+
         let window = Block::bordered()
             .title(Line::from(self.title.clone()).centered())
+            // .title_bottom(instructions)
             .border_set(border::ROUNDED);
 
         self.tasks_list.render(window.inner(area), buf);
