@@ -85,6 +85,18 @@ impl Task {
         }
     }
 
+    pub fn elapsed_session_time(&self) -> chrono::Duration {
+        if let Some(session) = self.sessions.last() {
+            if let Some(end) = session.end {
+                return end - session.start;
+            } else {
+                return chrono::Local::now() - session.start;
+            }
+        }
+
+        chrono::Duration::zero()
+    }
+
     pub fn to_string(&self) -> String {
         let mut out = format!("Task: {}", self.name);
         for subtask in &self.subtasks {
