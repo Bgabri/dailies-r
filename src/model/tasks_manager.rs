@@ -9,28 +9,19 @@ pub struct TasksManager {
 impl TasksManager {
     pub fn new() -> Self {
         TasksManager {
-            tasks: Self::test_tasks(),
+            tasks: Self::load_tasks(),
         }
     }
 
-    fn test_tasks() -> Vec<Task> {
-        let mut task = Task::new("My Task".to_string(), "This is a sample task.".to_string());
-        let mut subtask1 = Task::new(
-            "Subtask 1".to_string(),
-            "This is the first subtask.".to_string(),
-        );
-        let subtask2 = Task::new(
-            "Subtask 2".to_string(),
-            "This is the second subtask.".to_string(),
-        );
-        let subsubtask = Task::new(
-            "Sub-subtask".to_string(),
-            "This is a sub-subtask.".to_string(),
-        );
-        subtask1.add_subtask(subsubtask);
-        task.add_subtask(subtask1);
-        task.add_subtask(subtask2);
-        vec![task]
+    pub fn load_tasks() -> Vec<Task> {
+        let data = std::fs::read_to_string("data/tasks.json").expect("Failed to read tasks file");
+        serde_json::from_str(&data).expect("Failed to deserialize tasks")
+    }
+
+    pub fn save_tasks(&self) {
+        let serialized =
+            serde_json::to_string_pretty(&self.tasks).expect("Failed to serialize tasks");
+        std::fs::write("data/tasks.json", serialized).expect("Failed to write tasks to");
     }
 
     pub fn add_task(&mut self, task: Task) {
@@ -60,7 +51,6 @@ impl TasksManager {
         }
         tasks
     }
-
 
     pub fn get_task(&mut self, ids: &[Uuid]) -> Option<&Task> {
         for task in &self.tasks {

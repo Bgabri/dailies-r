@@ -1,18 +1,24 @@
 use std::{fmt::Debug, hash};
 
 use chrono::{DateTime, Local};
+use serde::{Deserialize, Serialize};
 
+#[derive(Serialize, Deserialize)]
 pub struct Session {
     pub start: DateTime<Local>,
     pub end: Option<DateTime<Local>>,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Goal {}
 
+#[derive(Serialize, Deserialize)]
 pub enum TaskTag {
     Other(String),
 }
 
+
+#[derive(Serialize, Deserialize)]
 pub struct Task {
     pub id: uuid::Uuid,
     pub name: String,
@@ -20,7 +26,6 @@ pub struct Task {
 
     pub created_at: DateTime<Local>,
     pub ended_at: Option<DateTime<Local>>,
-    pub completed: Option<bool>,
 
     pub sessions: Vec<Session>,
 
@@ -30,6 +35,7 @@ pub struct Task {
     pub priority: u8,
 }
 
+
 impl Task {
     pub fn new(name: String, description: String) -> Self {
         Task {
@@ -38,7 +44,6 @@ impl Task {
             description,
             created_at: chrono::Local::now(),
             ended_at: None,
-            completed: None,
             sessions: Vec::new(),
             goals: Vec::new(),
             tags: Vec::new(),
@@ -95,6 +100,15 @@ impl Task {
         }
 
         chrono::Duration::zero()
+    }
+
+    pub fn mark_completed(&mut self) {
+        self.ended_at = Some(chrono::Local::now());
+        self.end_session();
+    }
+
+    pub fn is_completed(&self) -> bool {
+        self.ended_at.is_some()
     }
 
     pub fn to_string(&self) -> String {

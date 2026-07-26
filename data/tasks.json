@@ -1,0 +1,57 @@
+[
+  {
+    "id": "e30a63b7-58ba-4d2b-9728-3ac07bab0366",
+    "name": "My Task",
+    "description": "This is a sample task.",
+    "created_at": "2026-07-26T18:31:44.396980850+02:00",
+    "ended_at": null,
+    "sessions": [],
+    "goals": [],
+    "tags": [],
+    "subtasks": [
+      {
+        "id": "75128bb3-eb29-4716-9bf7-92a20b4fa594",
+        "name": "Subtask 2",
+        "description": "This is the second subtask.",
+        "created_at": "2026-07-26T18:31:44.397045061+02:00",
+        "ended_at": null,
+        "sessions": [],
+        "goals": [],
+        "tags": [],
+        "subtasks": [],
+        "priority": 0
+      },
+      {
+        "id": "4dd0c318-a905-43b4-839b-dca7f17f255e",
+        "name": "Subtask 1",
+        "description": "This is the first subtask.",
+        "created_at": "2026-07-26T18:31:44.397044340+02:00",
+        "ended_at": null,
+        "sessions": [
+          {
+            "start": "2026-07-26T18:31:44.397046704+02:00",
+            "end": null
+          }
+        ],
+        "goals": [],
+        "tags": [],
+        "subtasks": [
+          {
+            "id": "7b9843f3-4764-4f64-8baf-863e46d86183",
+            "name": "Sub-subtask",
+            "description": "This is a sub-subtask.",
+            "created_at": "2026-07-26T18:31:44.397045743+02:00",
+            "ended_at": "2026-07-26T18:31:44.397046063+02:00",
+            "sessions": [],
+            "goals": [],
+            "tags": [],
+            "subtasks": [],
+            "priority": 0
+          }
+        ],
+        "priority": 0
+      }
+    ],
+    "priority": 0
+  }
+]
