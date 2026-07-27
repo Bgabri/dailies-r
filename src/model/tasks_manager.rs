@@ -2,6 +2,8 @@ use uuid::Uuid;
 
 use crate::model::task::Task;
 
+const TASKS_FILE: &str = "data/tasks.json";
+
 pub struct TasksManager {
     tasks: Vec<Task>,
 }
@@ -14,14 +16,14 @@ impl TasksManager {
     }
 
     pub fn load_tasks() -> Vec<Task> {
-        let data = std::fs::read_to_string("data/tasks.json").expect("Failed to read tasks file");
+        let data = std::fs::read_to_string(TASKS_FILE).expect("Failed to read tasks file");
         serde_json::from_str(&data).expect("Failed to deserialize tasks")
     }
 
     pub fn save_tasks(&self) {
         let serialized =
             serde_json::to_string_pretty(&self.tasks).expect("Failed to serialize tasks");
-        std::fs::write("data/tasks.json", serialized).expect("Failed to write tasks to");
+        std::fs::write(TASKS_FILE, serialized).expect("Failed to write tasks to file");
     }
 
     pub fn add_task(&mut self, task: Task) {
