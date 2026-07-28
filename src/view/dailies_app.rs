@@ -11,7 +11,9 @@ use ratatui::{
     widgets::{Block, Clear, StatefulWidget, Widget},
 };
 
-use crate::view::tasks_list::TasksList;
+use crate::view::{
+    dailies_app::DailiesAppTransition::None, task_editor::TaskEditorState, tasks_list::TasksList,
+};
 use crate::{
     model::{task::Task, tasks_manager::TasksManager},
     view::tasks_list::TasksListState,
@@ -20,31 +22,36 @@ use crate::{
 #[derive(PartialEq, Eq)]
 pub enum DailiesAppState {
     ListView,
-    TaskEditView,
+    TaskEditView(TaskEditorState),
     TaskAddView,
-    Exiting,
+    Exited,
+}
+
+pub enum DailiesAppTransition {
+    Exit,
+    EditTask(Task),
+    Save,
+    Cancel,
+    None,
 }
 
 pub struct DailiesApp {
     title: String,
     tasks_list_state: TasksListState,
     state: DailiesAppState,
-    task_editor_state: Option<crate::view::task_editor::TaskEditorState>,
 }
 
 impl DailiesApp {
     pub fn new(task_manager: TasksManager) -> Self {
         DailiesApp {
             title: "Task Manager".to_string(),
-            // task_manager,
             tasks_list_state: TasksListState::new(task_manager),
             state: DailiesAppState::ListView,
-            task_editor_state: None,
         }
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        while self.state != DailiesAppState::Exiting {
+        while self.state != DailiesAppState::Exited {
             self.handle_events()?;
             terminal.draw(|frame| self.draw(frame))?;
         }
@@ -61,17 +68,23 @@ impl DailiesApp {
             return Ok(());
         }
 
-        match self.state {
-            DailiesAppState::ListView => {
-                self.state = self.tasks_list_state.handle_events()?;
-            }
+        let app_event: DailiesAppTransition = match &mut self.state {
+            DailiesAppState::ListView => self.tasks_list_state.handle_events()?,
 
-            // DailiesAppState::TaskEditView => {
-            //     self.state = self.
-            // }
-            _ => {
-                self.state = DailiesAppState::ListView;
+            DailiesAppState::TaskEditView(task_editor_state) => {
+                task_editor_state.handle_events()?
             }
+            _ => None,
+        };
+
+        match app_event {
+            DailiesAppTransition::Exit => self.state = DailiesAppState::Exited,
+            DailiesAppTransition::EditTask(task) => {
+                self.state = DailiesAppState::TaskEditView(TaskEditorState::new(task))
+            }
+            DailiesAppTransition::Cancel => self.state = DailiesAppState::ListView,
+            DailiesAppTransition::Save => {}
+            DailiesAppTransition::None => {}
         }
 
         Ok(())
@@ -88,7 +101,7 @@ impl Widget for &mut DailiesApp {
         tasks_list.render(window.inner(area), buf, &mut self.tasks_list_state);
         window.render(area, buf);
 
-        if self.state == DailiesAppState::TaskEditView {
+        if let DailiesAppState::TaskEditView(task_editor_state) = &mut self.state {
             let mut task_editor = crate::view::task_editor::TaskEditor::new();
             let popup_block = Block::bordered()
                 .title("Editing")
@@ -97,11 +110,7 @@ impl Widget for &mut DailiesApp {
                 area.centered(Constraint::Percentage(60), Constraint::Percentage(20));
 
             Clear.render(centered_area, buf);
-            task_editor.render(
-                popup_block.inner(centered_area),
-                buf,
-                self.task_editor_state.as_mut().unwrap(),
-            );
+            task_editor.render(popup_block.inner(centered_area), buf, task_editor_state);
             popup_block.render(centered_area, buf);
         }
     }

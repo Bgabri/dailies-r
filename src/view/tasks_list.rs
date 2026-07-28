@@ -12,7 +12,7 @@ use uuid::Uuid;
 
 use crate::{
     model::{task::Task, tasks_manager::TasksManager},
-    view::dailies_app::DailiesAppState,
+    view::dailies_app::DailiesAppTransition,
 };
 
 pub struct TasksListState {
@@ -27,7 +27,7 @@ impl TasksListState {
             tree_state: TreeState::default(),
         }
     }
-    pub fn get_selected_task(&mut self) -> &mut Task {
+    fn get_selected_task(&mut self) -> &mut Task {
         let selected = self.tree_state.selected();
         return self
             .tasks_manager
@@ -39,7 +39,7 @@ impl TasksListState {
         self.get_selected_task().track()
     }
 
-    fn handle_mouse_event(&mut self, mouse_event: event::MouseEvent) -> Result<DailiesAppState> {
+    fn handle_mouse_event(&mut self, mouse_event: event::MouseEvent) -> DailiesAppTransition {
         match mouse_event.kind {
             MouseEventKind::ScrollDown => self.tree_state.scroll_down(1),
             MouseEventKind::ScrollUp => self.tree_state.scroll_up(1),
@@ -48,13 +48,13 @@ impl TasksListState {
                 .click_at(Position::new(mouse_event.column, mouse_event.row)),
             _ => false,
         };
-        Ok(DailiesAppState::ListView)
+        DailiesAppTransition::None
     }
 
-    fn handle_key_event(&mut self, key_event: event::KeyEvent) -> Result<DailiesAppState> {
+    fn handle_key_press(&mut self, key_event: event::KeyEvent) -> DailiesAppTransition {
         match key_event.code {
-            KeyCode::Char('q') => return Ok(DailiesAppState::Exiting),
-            KeyCode::Char('e') => return Ok(DailiesAppState::TaskEditView),
+            KeyCode::Char('q') => return DailiesAppTransition::Exit,
+            KeyCode::Char('e') => return DailiesAppTransition::EditTask(self.get_selected_task().clone()),
             KeyCode::Char('p' | ' ') => self.track_selected(),
 
             // navigation
@@ -71,16 +71,16 @@ impl TasksListState {
             _ => false,
         };
         self.tasks_manager.save_tasks();
-        Ok(DailiesAppState::ListView)
+        DailiesAppTransition::None
     }
 
-    pub fn handle_events(&mut self) -> Result<DailiesAppState> {
+    pub fn handle_events(&mut self) -> Result<DailiesAppTransition> {
         match event::read()? {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                self.handle_key_event(key_event)
+                Ok(self.handle_key_press(key_event))
             }
-            Event::Mouse(mouse_event) => self.handle_mouse_event(mouse_event),
-            _ => Ok(DailiesAppState::ListView),
+            Event::Mouse(mouse_event) => Ok(self.handle_mouse_event(mouse_event)),
+            _ => Ok(DailiesAppTransition::None),
         }
     }
 }

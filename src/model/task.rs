@@ -3,22 +3,22 @@ use std::{fmt::Debug, hash};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Session {
     pub start: DateTime<Local>,
     pub end: Option<DateTime<Local>>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Goal {}
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum TaskTag {
     Other(String),
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Task {
     pub id: uuid::Uuid,
     pub name: String,

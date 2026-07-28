@@ -7,10 +7,33 @@ use ratatui::{
     widgets::{Paragraph, StatefulWidget, Widget},
 };
 
-use crate::model::task::Task;
+use crate::{model::task::Task, view::dailies_app::DailiesAppTransition};
 
+#[derive(PartialEq, Eq)]
 pub struct TaskEditorState {
     task: Task,
+}
+
+impl TaskEditorState {
+    pub fn new(task: Task) -> Self {
+        TaskEditorState { task }
+    }
+
+    fn handle_key_press(&mut self, key_code: KeyCode) -> DailiesAppTransition {
+        match key_code {
+            KeyCode::Esc => DailiesAppTransition::Cancel,
+            _ => DailiesAppTransition::None,
+        }
+    }
+
+    pub fn handle_events(&mut self) -> std::io::Result<DailiesAppTransition> {
+        match event::read()? {
+            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                Ok(self.handle_key_press(key_event.code))
+            }
+            _ => Ok(DailiesAppTransition::None),
+        }
+    }
 }
 
 pub struct TaskEditor {}
@@ -19,17 +42,9 @@ impl TaskEditor {
     pub fn new() -> Self {
         TaskEditor {}
     }
-
-    fn handle_events(&mut self) -> std::io::Result<()> {
-        match event::read()? {
-            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {}
-            _ => {}
-        }
-        Ok(())
-    }
 }
 
-impl StatefulWidget for &mut TaskEditor {
+impl StatefulWidget for & mut TaskEditor {
     type State = TaskEditorState;
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let text = vec![
