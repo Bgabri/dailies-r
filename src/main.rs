@@ -8,9 +8,8 @@ use crate::model::tasks_manager::TasksManager;
 
 fn main() -> io::Result<()> {
     let mut task_manager = TasksManager::new();
-    let mut app = TaskApp::new(&mut task_manager);
+    let mut app = TaskApp::new(task_manager);
 
     ratatui::run(|term| app.run(term))
     // Ok(())
 }
- 

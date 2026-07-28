@@ -5,18 +5,20 @@ use ratatui::{
     style::Stylize,
     symbols::border,
     text::Line,
-    widgets::{Paragraph, Widget},
+    widgets::{Paragraph, StatefulWidget, Widget},
 };
 
 use crate::model::task::Task;
 
-pub struct TaskEditor<'a> {
-    task: &'a mut Task,
+pub struct TaskEditorState {
+    task: Task,
 }
 
-impl<'a> TaskEditor<'a> {
-    pub fn new(task: &'a mut Task) -> Self {
-        TaskEditor { task }
+pub struct TaskEditor {}
+
+impl TaskEditor {
+    pub fn new() -> Self {
+        TaskEditor {}
     }
 
     fn handle_events(&mut self) -> std::io::Result<()> {
@@ -28,14 +30,15 @@ impl<'a> TaskEditor<'a> {
     }
 }
 
-impl Widget for &mut TaskEditor<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl StatefulWidget for &mut TaskEditor {
+    type State = TaskEditorState;
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let text = vec![
-            self.task.id.to_string().into(),
+            state.task.id.to_string().into(),
             Line::from(vec![
-                self.task.name.clone().green().bold(),
+                state.task.name.clone().green().bold(),
                 ": ".into(),
-                self.task.description.clone().italic().gray(),
+                state.task.description.clone().italic().gray(),
             ]),
         ];
 
