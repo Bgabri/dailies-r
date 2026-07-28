@@ -1,8 +1,7 @@
 use uuid::Uuid;
 
 use crate::model::task::Task;
-
-const TASKS_FILE: &str = "data/tasks.json";
+use std::path::PathBuf;
 
 pub struct TasksManager {
     tasks: Vec<Task>,
@@ -15,15 +14,37 @@ impl TasksManager {
         }
     }
 
+    #[cfg(debug_assertions)]
+    fn tasks_file_path() -> PathBuf {
+        PathBuf::from("data/tasks.json")
+    }
+
+    #[cfg(not(debug_assertions))]
+    fn tasks_file_path() -> PathBuf {
+        let mut dir = dirs::data_dir().expect("Could not find data directory");
+        dir.push("dailies-r");
+        dir.push("tasks.json");
+        dir
+    }
+
     pub fn load_tasks() -> Vec<Task> {
-        let data = std::fs::read_to_string(TASKS_FILE).expect("Failed to read tasks file");
+        let path = Self::tasks_file_path();
+        if !path.exists() {
+            return Vec::new();
+        }
+        let data = std::fs::read_to_string(&path).expect("Failed to read tasks file");
         serde_json::from_str(&data).expect("Failed to deserialize tasks")
     }
 
     pub fn save_tasks(&self) {
+        let path = Self::tasks_file_path();
+        if let Some(parent) = path.parent() {
+            std::fs::create_dir_all(parent).expect("Failed to create tasks directory");
+        }
+
         let serialized =
             serde_json::to_string_pretty(&self.tasks).expect("Failed to serialize tasks");
-        std::fs::write(TASKS_FILE, serialized).expect("Failed to write tasks to file");
+        std::fs::write(&path, serialized).expect("Failed to write tasks to file");
     }
 
     pub fn add_task(&mut self, task: Task) {
