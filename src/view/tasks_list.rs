@@ -8,8 +8,12 @@ use ratatui::{
 };
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 use uuid::Uuid;
+use std::io::Result;
 
-use crate::model::{task::Task, tasks_manager::TasksManager};
+use crate::{
+    model::{task::Task, tasks_manager::TasksManager},
+    view::task_widget::TaskAppState,
+};
 
 pub struct TasksList<'a> {
     tasks_manager: &'a mut TasksManager,
@@ -59,7 +63,7 @@ impl<'a> TasksList<'a> {
         line
     }
 
-    fn tasks_tree(&self, task: &Task) -> Result<TreeItem<'a, Uuid>, std::io::Error> {
+    fn tasks_tree(&self, task: &Task) -> Result<TreeItem<'a, Uuid>> {
         let mut items = Vec::new();
         for sub_task in &task.subtasks {
             let item = self.tasks_tree(sub_task)?;
@@ -77,7 +81,7 @@ impl<'a> TasksList<'a> {
         return items;
     }
 
-    fn get_selected_task(&mut self) -> &mut Task {
+    pub fn get_selected_task(&mut self) -> &mut Task {
         let selected = self.state.selected();
         return self
             .tasks_manager
@@ -89,12 +93,7 @@ impl<'a> TasksList<'a> {
         self.get_selected_task().track()
     }
 
-    fn edit_selected(&mut self) -> bool {
-        // self.get_selected_task().edit()
-        false
-    }
-
-    pub fn handle_mouse_event(&mut self, mouse_event: event::MouseEvent) {
+    fn handle_mouse_event(&mut self, mouse_event: event::MouseEvent) -> Result<TaskAppState> {
         match mouse_event.kind {
             MouseEventKind::ScrollDown => self.state.scroll_down(1),
             MouseEventKind::ScrollUp => self.state.scroll_up(1),
@@ -103,12 +102,15 @@ impl<'a> TasksList<'a> {
                 .click_at(Position::new(mouse_event.column, mouse_event.row)),
             _ => false,
         };
+        Ok(TaskAppState::ListView)
     }
 
-    pub fn handle_key_event(&mut self, key_event: event::KeyEvent) {
+    fn handle_key_event(&mut self, key_event: event::KeyEvent) -> Result<TaskAppState> {
         match key_event.code {
+            KeyCode::Char('q') => return Ok(TaskAppState::Exiting),
+            KeyCode::Char('e') => return Ok(TaskAppState::TaskEditView),
             KeyCode::Char('p' | ' ') => self.track_selected(),
-            KeyCode::Char('e') => self.edit_selected(),
+
             // navigation
             KeyCode::Enter | KeyCode::Char('\n') => self.state.toggle_selected(),
             KeyCode::Left => self.state.key_left(),
@@ -122,6 +124,17 @@ impl<'a> TasksList<'a> {
             KeyCode::PageUp => self.state.scroll_up(3),
             _ => false,
         };
+        Ok(TaskAppState::ListView)
+    }
+
+    pub fn handle_events(&mut self) -> Result<TaskAppState> {
+        match event::read()? {
+            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
+                self.handle_key_event(key_event)
+            }
+            Event::Mouse(mouse_event) => self.handle_mouse_event(mouse_event),
+            _ => Ok(TaskAppState::ListView),
+        }
     }
 }
 

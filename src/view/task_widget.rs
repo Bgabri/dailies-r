@@ -2,25 +2,25 @@ use std::{io, time::Duration};
 
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, MouseEventKind};
 use ratatui::{
-    DefaultTerminal, Frame,
-    buffer::Buffer,
-    layout::{Position, Rect},
-    style::{Color, Modifier, Style, Stylize},
-    symbols::border,
-    text::{Line, Span, Text},
-    widgets::{Block, StatefulWidget, Widget},
+    DefaultTerminal, Frame, buffer::Buffer, layout::{Constraint, Position, Rect}, style::{Color, Modifier, Style, Stylize}, symbols::border, text::{Line, Span, Text}, widgets::{Block, Clear, StatefulWidget, Widget},
 };
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 use crate::model::{task::Task, tasks_manager::TasksManager};
 use crate::view::tasks_list::TasksList;
 
+#[derive(PartialEq, Eq)]
+pub enum TaskAppState {
+    ListView,
+    TaskEditView,
+    TaskAddView,
+    Exiting,
+}
 
 pub struct TaskApp<'a> {
     title: String,
-    // task_manager: &'a mut TasksManager,
-    exit: bool,
     tasks_list: TasksList<'a>,
+    state: TaskAppState,
 }
 
 impl<'a> TaskApp<'a> {
@@ -29,16 +29,12 @@ impl<'a> TaskApp<'a> {
             title: "Task Manager".to_string(),
             // task_manager,
             tasks_list: TasksList::new(task_manager),
-            exit: false,
+            state: TaskAppState::ListView,
         }
     }
 
-    pub fn exit(&mut self) {
-        self.exit = true;
-    }
-
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        while !self.exit {
+        while self.state != TaskAppState::Exiting {
             terminal.draw(|frame| self.draw(frame))?;
             self.handle_events()?;
         }
@@ -55,16 +51,19 @@ impl<'a> TaskApp<'a> {
             return Ok(());
         }
 
-        match event::read()? {
-            Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                if key_event.code == KeyCode::Char('q') || key_event.code == KeyCode::Esc {
-                    self.exit();
-                }
-                self.tasks_list.handle_key_event(key_event)
+        match self.state {
+            TaskAppState::ListView => {
+                self.state = self.tasks_list.handle_events()?;
             }
-            Event::Mouse(mouse_event) => self.tasks_list.handle_mouse_event(mouse_event),
-            _ => {}
+
+            // TaskAppState::TaskEditView => {
+            //     self.state = self.
+            // }
+            _ => {
+                self.state = TaskAppState::ListView;
+            }
         }
+
         Ok(())
     }
 }
@@ -77,5 +76,19 @@ impl<'a> Widget for &mut TaskApp<'a> {
 
         self.tasks_list.render(window.inner(area), buf);
         window.render(area, buf);
+
+        if self.state == TaskAppState::TaskEditView {
+            let mut task_editor =
+                crate::view::task_editor::TaskEditor::new(self.tasks_list.get_selected_task());
+            let popup_block = Block::bordered().title("Editing").border_set(border::ROUNDED);
+            let centered_area =
+                area.centered(Constraint::Percentage(60), Constraint::Percentage(20));
+
+            Clear.render(centered_area, buf);
+            task_editor.render(popup_block.inner(centered_area), buf);
+            popup_block.render(centered_area, buf);
+
+        }
+        
     }
 }
