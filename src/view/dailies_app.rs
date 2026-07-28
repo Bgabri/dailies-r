@@ -1,6 +1,6 @@
 use std::{io, time::Duration};
 
-use crossterm::event::{self, Event, KeyCode, KeyEventKind, MouseEventKind};
+use crossterm::event;
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
@@ -10,42 +10,41 @@ use ratatui::{
     text::{Line, Span, Text},
     widgets::{Block, Clear, StatefulWidget, Widget},
 };
-use tui_tree_widget::{Tree, TreeItem, TreeState};
 
 use crate::view::tasks_list::TasksList;
 use crate::{
     model::{task::Task, tasks_manager::TasksManager},
-    view::tasks_list::{self, TasksListState},
+    view::tasks_list::TasksListState,
 };
 
 #[derive(PartialEq, Eq)]
-pub enum TaskAppState {
+pub enum DailiesAppState {
     ListView,
     TaskEditView,
     TaskAddView,
     Exiting,
 }
 
-pub struct TaskApp {
+pub struct DailiesApp {
     title: String,
     tasks_list_state: TasksListState,
-    state: TaskAppState,
-    taskEditorState: Option<crate::view::task_editor::TaskEditorState>,
+    state: DailiesAppState,
+    task_editor_state: Option<crate::view::task_editor::TaskEditorState>,
 }
 
-impl TaskApp {
+impl DailiesApp {
     pub fn new(task_manager: TasksManager) -> Self {
-        TaskApp {
+        DailiesApp {
             title: "Task Manager".to_string(),
             // task_manager,
             tasks_list_state: TasksListState::new(task_manager),
-            state: TaskAppState::ListView,
-            taskEditorState: None,
+            state: DailiesAppState::ListView,
+            task_editor_state: None,
         }
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        while self.state != TaskAppState::Exiting {
+        while self.state != DailiesAppState::Exiting {
             self.handle_events()?;
             terminal.draw(|frame| self.draw(frame))?;
         }
@@ -63,15 +62,15 @@ impl TaskApp {
         }
 
         match self.state {
-            TaskAppState::ListView => {
+            DailiesAppState::ListView => {
                 self.state = self.tasks_list_state.handle_events()?;
             }
 
-            // TaskAppState::TaskEditView => {
+            // DailiesAppState::TaskEditView => {
             //     self.state = self.
             // }
             _ => {
-                self.state = TaskAppState::ListView;
+                self.state = DailiesAppState::ListView;
             }
         }
 
@@ -79,7 +78,7 @@ impl TaskApp {
     }
 }
 
-impl Widget for &mut TaskApp {
+impl Widget for &mut DailiesApp {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let window = Block::bordered()
             .title(Line::from(self.title.clone()).centered())
@@ -89,7 +88,7 @@ impl Widget for &mut TaskApp {
         tasks_list.render(window.inner(area), buf, &mut self.tasks_list_state);
         window.render(area, buf);
 
-        if self.state == TaskAppState::TaskEditView {
+        if self.state == DailiesAppState::TaskEditView {
             let mut task_editor = crate::view::task_editor::TaskEditor::new();
             let popup_block = Block::bordered()
                 .title("Editing")
@@ -101,7 +100,7 @@ impl Widget for &mut TaskApp {
             task_editor.render(
                 popup_block.inner(centered_area),
                 buf,
-                self.taskEditorState.as_mut().unwrap(),
+                self.task_editor_state.as_mut().unwrap(),
             );
             popup_block.render(centered_area, buf);
         }

@@ -12,7 +12,7 @@ use uuid::Uuid;
 
 use crate::{
     model::{task::Task, tasks_manager::TasksManager},
-    view::task_widget::TaskAppState,
+    view::dailies_app::DailiesAppState,
 };
 
 pub struct TasksListState {
@@ -39,7 +39,7 @@ impl TasksListState {
         self.get_selected_task().track()
     }
 
-    fn handle_mouse_event(&mut self, mouse_event: event::MouseEvent) -> Result<TaskAppState> {
+    fn handle_mouse_event(&mut self, mouse_event: event::MouseEvent) -> Result<DailiesAppState> {
         match mouse_event.kind {
             MouseEventKind::ScrollDown => self.tree_state.scroll_down(1),
             MouseEventKind::ScrollUp => self.tree_state.scroll_up(1),
@@ -48,13 +48,13 @@ impl TasksListState {
                 .click_at(Position::new(mouse_event.column, mouse_event.row)),
             _ => false,
         };
-        Ok(TaskAppState::ListView)
+        Ok(DailiesAppState::ListView)
     }
 
-    fn handle_key_event(&mut self, key_event: event::KeyEvent) -> Result<TaskAppState> {
+    fn handle_key_event(&mut self, key_event: event::KeyEvent) -> Result<DailiesAppState> {
         match key_event.code {
-            KeyCode::Char('q') => return Ok(TaskAppState::Exiting),
-            KeyCode::Char('e') => return Ok(TaskAppState::TaskEditView),
+            KeyCode::Char('q') => return Ok(DailiesAppState::Exiting),
+            KeyCode::Char('e') => return Ok(DailiesAppState::TaskEditView),
             KeyCode::Char('p' | ' ') => self.track_selected(),
 
             // navigation
@@ -71,16 +71,16 @@ impl TasksListState {
             _ => false,
         };
         self.tasks_manager.save_tasks();
-        Ok(TaskAppState::ListView)
+        Ok(DailiesAppState::ListView)
     }
 
-    pub fn handle_events(&mut self) -> Result<TaskAppState> {
+    pub fn handle_events(&mut self) -> Result<DailiesAppState> {
         match event::read()? {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 self.handle_key_event(key_event)
             }
             Event::Mouse(mouse_event) => self.handle_mouse_event(mouse_event),
-            _ => Ok(TaskAppState::ListView),
+            _ => Ok(DailiesAppState::ListView),
         }
     }
 }
