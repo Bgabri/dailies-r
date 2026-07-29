@@ -1,4 +1,4 @@
-use crossterm::event::{self, Event, KeyCode, KeyEventKind, MouseEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
@@ -7,7 +7,7 @@ use ratatui::{
     widgets::{Paragraph, StatefulWidget, Widget},
 };
 
-use crate::{model::task::Task, view::dailies_app::DailiesAppTransition};
+use crate::{model::task::Task, view::dailies_app::DailiesAppEvent};
 
 #[derive(PartialEq, Eq)]
 pub struct EditTaskViewState {
@@ -19,19 +19,19 @@ impl EditTaskViewState {
         EditTaskViewState { task }
     }
 
-    fn handle_key_press(&mut self, key_code: KeyCode) -> DailiesAppTransition {
+    fn handle_key_press(&mut self, key_code: KeyCode) -> DailiesAppEvent {
         match key_code {
-            KeyCode::Esc => DailiesAppTransition::Cancel,
-            _ => DailiesAppTransition::None,
+            KeyCode::Esc => DailiesAppEvent::Cancel,
+            _ => DailiesAppEvent::None,
         }
     }
 
-    pub fn handle_events(&mut self) -> std::io::Result<DailiesAppTransition> {
+    pub fn handle_events(&mut self) -> std::io::Result<DailiesAppEvent> {
         match event::read()? {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 Ok(self.handle_key_press(key_event.code))
             }
-            _ => Ok(DailiesAppTransition::None),
+            _ => Ok(DailiesAppEvent::None),
         }
     }
 }

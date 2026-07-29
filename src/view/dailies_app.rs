@@ -6,14 +6,14 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Rect},
     symbols::border,
-    text::{Line},
+    text::Line,
     widgets::{Block, Clear, StatefulWidget, Widget},
 };
 use uuid::Uuid;
 
 use crate::model::{task::Task, tasks_manager::TasksManager};
 use crate::view::{
-    dailies_app::DailiesAppTransition::None,
+    dailies_app::DailiesAppEvent::None,
     edit_task_view::EditTaskViewState,
     tasks_tree::{TasksTreeView, TasksTreeViewState},
 };
@@ -26,10 +26,11 @@ pub enum DailiesAppState {
     Exited,
 }
 
-pub enum DailiesAppTransition {
+pub enum DailiesAppEvent {
     Exit,
     EditTask(Vec<Uuid>),
     AddTask(Vec<Uuid>),
+    TrackTask(Vec<Uuid>),
     Save,
     Cancel,
     None,
@@ -70,7 +71,7 @@ impl DailiesApp {
             return Ok(());
         }
 
-        let app_event: DailiesAppTransition = match &mut self.state {
+        let app_event: DailiesAppEvent = match &mut self.state {
             DailiesAppState::ListView => self.tasks_tree_state.handle_events()?,
             DailiesAppState::EditTaskView(task_editor_state) => {
                 task_editor_state.handle_events()?
@@ -81,27 +82,35 @@ impl DailiesApp {
             _ => None,
         };
 
-        match app_event {
-            DailiesAppTransition::Exit => self.state = DailiesAppState::Exited,
-            DailiesAppTransition::EditTask(task_ids) => {
-                let task = self
-                    .tasks_manager
-                    .get_task(&task_ids);
-                    
+        self.transition(app_event);
+        Ok(())
+    }
+
+    fn transition(&mut self, event: DailiesAppEvent) {
+        match event {
+            DailiesAppEvent::Exit => self.state = DailiesAppState::Exited,
+            DailiesAppEvent::EditTask(task_ids) => {
+                let task = self.tasks_manager.get_task(&task_ids);
+
                 if let Some(task) = task {
                     self.state = DailiesAppState::EditTaskView(EditTaskViewState::new(task.clone()))
                 }
             }
-            DailiesAppTransition::AddTask(parent_ids) => {
+            DailiesAppEvent::AddTask(parent_ids) => {
                 self.state =
                     DailiesAppState::AddTaskView(parent_ids, EditTaskViewState::new(Task::empty()));
             }
-            DailiesAppTransition::Cancel => self.state = DailiesAppState::ListView,
-            DailiesAppTransition::Save => {}
-            DailiesAppTransition::None => {}
-        }
 
-        Ok(())
+            DailiesAppEvent::TrackTask(task_ids) => {
+                self.tasks_manager
+                    .get_task_mut(&task_ids)
+                    .and_then(|t| Some(t.track()));
+            }
+
+            DailiesAppEvent::Cancel => self.state = DailiesAppState::ListView,
+            DailiesAppEvent::Save => {}
+            DailiesAppEvent::None => {}
+        }
     }
 }
 

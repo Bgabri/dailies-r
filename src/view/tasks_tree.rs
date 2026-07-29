@@ -2,18 +2,15 @@ use crossterm::event::{self, Event, KeyCode, KeyEventKind, MouseEventKind};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect},
-    style::{Color, Modifier, Style, Stylize},
-    text::{Line, Span, Text},
-    widgets::{StatefulWidget, Widget},
+    style::{Color, Style, Stylize},
+    text::Line,
+    widgets::StatefulWidget,
 };
 use std::io::Result;
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 use uuid::Uuid;
 
-use crate::{
-    model::{task::Task, tasks_manager::TasksManager},
-    view::dailies_app::DailiesAppTransition,
-};
+use crate::{model::task::Task, view::dailies_app::DailiesAppEvent};
 
 pub struct TasksTreeViewState {
     tree_state: TreeState<Uuid>,
@@ -30,7 +27,7 @@ impl<'a> TasksTreeViewState {
         self.tree_state.selected().to_vec()
     }
 
-    fn handle_mouse_event(&mut self, mouse_event: event::MouseEvent) -> DailiesAppTransition {
+    fn handle_mouse_event(&mut self, mouse_event: event::MouseEvent) -> DailiesAppEvent {
         match mouse_event.kind {
             MouseEventKind::ScrollDown => self.tree_state.scroll_down(1),
             MouseEventKind::ScrollUp => self.tree_state.scroll_up(1),
@@ -39,18 +36,20 @@ impl<'a> TasksTreeViewState {
                 .click_at(Position::new(mouse_event.column, mouse_event.row)),
             _ => false,
         };
-        DailiesAppTransition::None
+        DailiesAppEvent::None
     }
 
-    fn handle_key_press(&mut self, key_event: event::KeyEvent) -> DailiesAppTransition {
+    fn handle_key_press(&mut self, key_event: event::KeyEvent) -> DailiesAppEvent {
         match key_event.code {
-            KeyCode::Char('q') => return DailiesAppTransition::Exit,
-            // KeyCode::Char('p' | ' ') => self.track_selected(),
+            KeyCode::Char('q') => return DailiesAppEvent::Exit,
+            KeyCode::Char('p' | ' ') => {
+                return DailiesAppEvent::TrackTask(self.get_selected());
+            }
             KeyCode::Char('e') => {
-                return DailiesAppTransition::EditTask(self.get_selected());
+                return DailiesAppEvent::EditTask(self.get_selected());
             }
             KeyCode::Char('a') => {
-                return DailiesAppTransition::AddTask(self.get_selected());
+                return DailiesAppEvent::AddTask(self.get_selected());
             }
 
             // navigation
@@ -66,16 +65,16 @@ impl<'a> TasksTreeViewState {
             KeyCode::PageUp => self.tree_state.scroll_up(3),
             _ => false,
         };
-        DailiesAppTransition::None
+        DailiesAppEvent::None
     }
 
-    pub fn handle_events(&mut self) -> Result<DailiesAppTransition> {
+    pub fn handle_events(&mut self) -> Result<DailiesAppEvent> {
         match event::read()? {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 Ok(self.handle_key_press(key_event))
             }
             Event::Mouse(mouse_event) => Ok(self.handle_mouse_event(mouse_event)),
-            _ => Ok(DailiesAppTransition::None),
+            _ => Ok(DailiesAppEvent::None),
         }
     }
 }
@@ -87,7 +86,7 @@ pub struct TasksTreeView<'a> {
 impl<'a> TasksTreeView<'a> {
     pub fn new(tasks: &'a [Task]) -> Self {
         Self {
-            items: Self::items(tasks)
+            items: Self::items(tasks),
         }
     }
     fn tasks_line(task: &Task) -> Line<'_> {
