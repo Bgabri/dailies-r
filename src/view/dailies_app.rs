@@ -6,7 +6,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Rect},
     symbols::border,
-    text::{Line, Span, Text},
+    text::{Line},
     widgets::{Block, Clear, StatefulWidget, Widget},
 };
 use uuid::Uuid;
@@ -28,7 +28,7 @@ pub enum DailiesAppState {
 
 pub enum DailiesAppTransition {
     Exit,
-    EditTask(Task),
+    EditTask(Vec<Uuid>),
     AddTask(Vec<Uuid>),
     Save,
     Cancel,
@@ -39,14 +39,16 @@ pub struct DailiesApp {
     title: String,
     tasks_tree_state: TasksTreeViewState,
     state: DailiesAppState,
+    tasks_manager: TasksManager,
 }
 
 impl DailiesApp {
     pub fn new(task_manager: TasksManager) -> Self {
         DailiesApp {
             title: "Task Manager".to_string(),
-            tasks_tree_state: TasksTreeViewState::new(task_manager),
+            tasks_tree_state: TasksTreeViewState::new(),
             state: DailiesAppState::ListView,
+            tasks_manager: task_manager,
         }
     }
 
@@ -81,8 +83,14 @@ impl DailiesApp {
 
         match app_event {
             DailiesAppTransition::Exit => self.state = DailiesAppState::Exited,
-            DailiesAppTransition::EditTask(task) => {
-                self.state = DailiesAppState::EditTaskView(EditTaskViewState::new(task))
+            DailiesAppTransition::EditTask(task_ids) => {
+                let task = self
+                    .tasks_manager
+                    .get_task(&task_ids);
+                    
+                if let Some(task) = task {
+                    self.state = DailiesAppState::EditTaskView(EditTaskViewState::new(task.clone()))
+                }
             }
             DailiesAppTransition::AddTask(parent_ids) => {
                 self.state =
@@ -103,7 +111,7 @@ impl Widget for &mut DailiesApp {
             .title(Line::from(self.title.clone()).centered())
             .border_set(border::ROUNDED);
 
-        let mut tasks_list = TasksTreeView::new();
+        let tasks_list = TasksTreeView::new(self.tasks_manager.get_tasks());
         tasks_list.render(window.inner(area), buf, &mut self.tasks_tree_state);
         window.render(area, buf);
 

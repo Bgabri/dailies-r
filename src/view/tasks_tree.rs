@@ -16,28 +16,18 @@ use crate::{
 };
 
 pub struct TasksTreeViewState {
-    pub tasks_manager: TasksManager,
-    pub tree_state: TreeState<Uuid>,
+    tree_state: TreeState<Uuid>,
 }
 
-impl TasksTreeViewState {
-    pub fn new(tasks_manager: TasksManager) -> Self {
+impl<'a> TasksTreeViewState {
+    pub fn new() -> Self {
         TasksTreeViewState {
-            tasks_manager,
             tree_state: TreeState::default(),
         }
     }
 
-    fn get_selected_task(&mut self) -> &mut Task {
-        let selected = self.tree_state.selected();
-        return self
-            .tasks_manager
-            .get_task_mut(selected)
-            .expect("no task selected");
-    }
-
-    fn track_selected(&mut self) -> bool {
-        self.get_selected_task().track()
+    fn get_selected(&mut self) -> Vec<Uuid> {
+        self.tree_state.selected().to_vec()
     }
 
     fn handle_mouse_event(&mut self, mouse_event: event::MouseEvent) -> DailiesAppTransition {
@@ -55,12 +45,12 @@ impl TasksTreeViewState {
     fn handle_key_press(&mut self, key_event: event::KeyEvent) -> DailiesAppTransition {
         match key_event.code {
             KeyCode::Char('q') => return DailiesAppTransition::Exit,
-            KeyCode::Char('p' | ' ') => self.track_selected(),
+            // KeyCode::Char('p' | ' ') => self.track_selected(),
             KeyCode::Char('e') => {
-                return DailiesAppTransition::EditTask(self.get_selected_task().clone());
+                return DailiesAppTransition::EditTask(self.get_selected());
             }
             KeyCode::Char('a') => {
-                return DailiesAppTransition::AddTask(self.tree_state.selected().to_vec());
+                return DailiesAppTransition::AddTask(self.get_selected());
             }
 
             // navigation
@@ -76,7 +66,6 @@ impl TasksTreeViewState {
             KeyCode::PageUp => self.tree_state.scroll_up(3),
             _ => false,
         };
-        self.tasks_manager.save_tasks();
         DailiesAppTransition::None
     }
 
@@ -91,13 +80,17 @@ impl TasksTreeViewState {
     }
 }
 
-pub struct TasksTreeView {}
+pub struct TasksTreeView<'a> {
+    items: Vec<TreeItem<'a, Uuid>>,
+}
 
-impl<'a> TasksTreeView {
-    pub fn new() -> Self {
-        Self {}
+impl<'a> TasksTreeView<'a> {
+    pub fn new(tasks: &'a [Task]) -> Self {
+        Self {
+            items: Self::items(tasks)
+        }
     }
-    fn tasks_line(&self, task: &Task) -> Line<'a> {
+    fn tasks_line(task: &Task) -> Line<'_> {
         let mut line: Line;
         if task.in_session() {
             let elapsed_time = task.elapsed_session_time();
@@ -132,30 +125,29 @@ impl<'a> TasksTreeView {
         line
     }
 
-    fn tasks_tree(&self, task: &Task) -> Result<TreeItem<'a, Uuid>> {
+    fn tasks_tree(task: &Task) -> Result<TreeItem<'_, Uuid>> {
         let mut items = Vec::new();
         for sub_task in &task.subtasks {
-            let item = self.tasks_tree(sub_task)?;
+            let item = Self::tasks_tree(sub_task)?;
             items.push(item);
         }
-        return TreeItem::new(task.id, self.tasks_line(task), items);
+        return TreeItem::new(task.id, Self::tasks_line(task), items);
     }
 
-    fn items(&self, state: &TasksTreeViewState) -> Vec<TreeItem<'a, Uuid>> {
+    fn items(tasks: &[Task]) -> Vec<TreeItem<'_, Uuid>> {
         let mut items = Vec::new();
-        for task in state.tasks_manager.get_tasks() {
-            let item = self.tasks_tree(task).expect("failed to create tree item");
+        for task in tasks {
+            let item = Self::tasks_tree(task).expect("failed to create tree item");
             items.push(item);
         }
         return items;
     }
 }
 
-impl<'a> StatefulWidget for &'a mut TasksTreeView {
+impl StatefulWidget for &TasksTreeView<'_> {
     type State = TasksTreeViewState;
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut TasksTreeViewState) {
-        let items = self.items(state);
-        let tree = Tree::new(&items)
+        let tree = Tree::new(&self.items)
             .expect("duplicate tasks found")
             .highlight_style(
                 Style::new().bg(Color::Black).fg(Color::Blue), // .add_modifier(Modifier::REVERSED),
