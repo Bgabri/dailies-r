@@ -4,32 +4,32 @@ use crossterm::event;
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
-    layout::{Constraint, Position, Rect},
-    style::{Color, Modifier, Style, Stylize},
+    layout::{Constraint, Rect},
     symbols::border,
     text::{Line, Span, Text},
     widgets::{Block, Clear, StatefulWidget, Widget},
 };
+use uuid::Uuid;
 
+use crate::model::{task::Task, tasks_manager::TasksManager};
 use crate::view::{
-    dailies_app::DailiesAppTransition::None, task_editor::TaskEditorState, tasks_list::TasksList,
-};
-use crate::{
-    model::{task::Task, tasks_manager::TasksManager},
-    view::tasks_list::TasksListState,
+    dailies_app::DailiesAppTransition::None,
+    edit_task_view::EditTaskViewState,
+    tasks_tree::{TasksTreeView, TasksTreeViewState},
 };
 
 #[derive(PartialEq, Eq)]
 pub enum DailiesAppState {
     ListView,
-    TaskEditView(TaskEditorState),
-    TaskAddView,
+    EditTaskView(EditTaskViewState),
+    AddTaskView(Vec<Uuid>, EditTaskViewState),
     Exited,
 }
 
 pub enum DailiesAppTransition {
     Exit,
     EditTask(Task),
+    AddTask(Vec<Uuid>),
     Save,
     Cancel,
     None,
@@ -37,7 +37,7 @@ pub enum DailiesAppTransition {
 
 pub struct DailiesApp {
     title: String,
-    tasks_list_state: TasksListState,
+    tasks_tree_state: TasksTreeViewState,
     state: DailiesAppState,
 }
 
@@ -45,7 +45,7 @@ impl DailiesApp {
     pub fn new(task_manager: TasksManager) -> Self {
         DailiesApp {
             title: "Task Manager".to_string(),
-            tasks_list_state: TasksListState::new(task_manager),
+            tasks_tree_state: TasksTreeViewState::new(task_manager),
             state: DailiesAppState::ListView,
         }
     }
@@ -69,9 +69,11 @@ impl DailiesApp {
         }
 
         let app_event: DailiesAppTransition = match &mut self.state {
-            DailiesAppState::ListView => self.tasks_list_state.handle_events()?,
-
-            DailiesAppState::TaskEditView(task_editor_state) => {
+            DailiesAppState::ListView => self.tasks_tree_state.handle_events()?,
+            DailiesAppState::EditTaskView(task_editor_state) => {
+                task_editor_state.handle_events()?
+            }
+            DailiesAppState::AddTaskView(_, task_editor_state) => {
                 task_editor_state.handle_events()?
             }
             _ => None,
@@ -80,7 +82,11 @@ impl DailiesApp {
         match app_event {
             DailiesAppTransition::Exit => self.state = DailiesAppState::Exited,
             DailiesAppTransition::EditTask(task) => {
-                self.state = DailiesAppState::TaskEditView(TaskEditorState::new(task))
+                self.state = DailiesAppState::EditTaskView(EditTaskViewState::new(task))
+            }
+            DailiesAppTransition::AddTask(parent_ids) => {
+                self.state =
+                    DailiesAppState::AddTaskView(parent_ids, EditTaskViewState::new(Task::empty()));
             }
             DailiesAppTransition::Cancel => self.state = DailiesAppState::ListView,
             DailiesAppTransition::Save => {}
@@ -97,12 +103,12 @@ impl Widget for &mut DailiesApp {
             .title(Line::from(self.title.clone()).centered())
             .border_set(border::ROUNDED);
 
-        let mut tasks_list: TasksList = TasksList::new();
-        tasks_list.render(window.inner(area), buf, &mut self.tasks_list_state);
+        let mut tasks_list = TasksTreeView::new();
+        tasks_list.render(window.inner(area), buf, &mut self.tasks_tree_state);
         window.render(area, buf);
 
-        if let DailiesAppState::TaskEditView(task_editor_state) = &mut self.state {
-            let mut task_editor = crate::view::task_editor::TaskEditor::new();
+        if let DailiesAppState::EditTaskView(task_editor_state) = &mut self.state {
+            let mut task_editor = crate::view::edit_task_view::EditTaskView::new();
             let popup_block = Block::bordered()
                 .title("Editing")
                 .border_set(border::ROUNDED);

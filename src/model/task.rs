@@ -52,6 +52,10 @@ impl Task {
         }
     }
 
+    pub fn empty() -> Self {
+        Self::new(String::new(), String::new())
+    }
+
     pub fn add_subtask(&mut self, subtask: Task) {
         self.subtasks.push(subtask);
     }

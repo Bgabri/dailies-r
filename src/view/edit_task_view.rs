@@ -10,13 +10,13 @@ use ratatui::{
 use crate::{model::task::Task, view::dailies_app::DailiesAppTransition};
 
 #[derive(PartialEq, Eq)]
-pub struct TaskEditorState {
+pub struct EditTaskViewState {
     task: Task,
 }
 
-impl TaskEditorState {
+impl EditTaskViewState {
     pub fn new(task: Task) -> Self {
-        TaskEditorState { task }
+        EditTaskViewState { task }
     }
 
     fn handle_key_press(&mut self, key_code: KeyCode) -> DailiesAppTransition {
@@ -36,16 +36,16 @@ impl TaskEditorState {
     }
 }
 
-pub struct TaskEditor {}
+pub struct EditTaskView {}
 
-impl TaskEditor {
+impl EditTaskView {
     pub fn new() -> Self {
-        TaskEditor {}
+        EditTaskView {}
     }
 }
 
-impl StatefulWidget for & mut TaskEditor {
-    type State = TaskEditorState;
+impl StatefulWidget for & mut EditTaskView {
+    type State = EditTaskViewState;
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let text = vec![
             state.task.id.to_string().into(),

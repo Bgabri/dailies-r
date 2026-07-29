@@ -15,18 +15,19 @@ use crate::{
     view::dailies_app::DailiesAppTransition,
 };
 
-pub struct TasksListState {
+pub struct TasksTreeViewState {
     pub tasks_manager: TasksManager,
     pub tree_state: TreeState<Uuid>,
 }
 
-impl TasksListState {
+impl TasksTreeViewState {
     pub fn new(tasks_manager: TasksManager) -> Self {
-        TasksListState {
+        TasksTreeViewState {
             tasks_manager,
             tree_state: TreeState::default(),
         }
     }
+
     fn get_selected_task(&mut self) -> &mut Task {
         let selected = self.tree_state.selected();
         return self
@@ -54,8 +55,13 @@ impl TasksListState {
     fn handle_key_press(&mut self, key_event: event::KeyEvent) -> DailiesAppTransition {
         match key_event.code {
             KeyCode::Char('q') => return DailiesAppTransition::Exit,
-            KeyCode::Char('e') => return DailiesAppTransition::EditTask(self.get_selected_task().clone()),
             KeyCode::Char('p' | ' ') => self.track_selected(),
+            KeyCode::Char('e') => {
+                return DailiesAppTransition::EditTask(self.get_selected_task().clone());
+            }
+            KeyCode::Char('a') => {
+                return DailiesAppTransition::AddTask(self.tree_state.selected().to_vec());
+            }
 
             // navigation
             KeyCode::Enter | KeyCode::Char('\n') => self.tree_state.toggle_selected(),
@@ -85,9 +91,9 @@ impl TasksListState {
     }
 }
 
-pub struct TasksList {}
+pub struct TasksTreeView {}
 
-impl<'a> TasksList {
+impl<'a> TasksTreeView {
     pub fn new() -> Self {
         Self {}
     }
@@ -135,7 +141,7 @@ impl<'a> TasksList {
         return TreeItem::new(task.id, self.tasks_line(task), items);
     }
 
-    fn items(&self, state: &TasksListState) -> Vec<TreeItem<'a, Uuid>> {
+    fn items(&self, state: &TasksTreeViewState) -> Vec<TreeItem<'a, Uuid>> {
         let mut items = Vec::new();
         for task in state.tasks_manager.get_tasks() {
             let item = self.tasks_tree(task).expect("failed to create tree item");
@@ -145,9 +151,9 @@ impl<'a> TasksList {
     }
 }
 
-impl<'a> StatefulWidget for &'a mut TasksList {
-    type State = TasksListState;
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut TasksListState) {
+impl<'a> StatefulWidget for &'a mut TasksTreeView {
+    type State = TasksTreeViewState;
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut TasksTreeViewState) {
         let items = self.items(state);
         let tree = Tree::new(&items)
             .expect("duplicate tasks found")
