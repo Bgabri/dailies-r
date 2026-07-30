@@ -5,10 +5,12 @@ use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
     layout::{Constraint, Rect},
+    style::{Style, Stylize},
     symbols::border,
-    text::Line,
+    text::{self, Line},
     widgets::{Block, Clear, StatefulWidget, Widget},
 };
+use ratatui_textarea::TextArea;
 use uuid::Uuid;
 
 use crate::model::{task::Task, tasks_manager::TasksManager};
@@ -18,12 +20,10 @@ use crate::view::{
     tasks_tree::{TasksTreeView, TasksTreeViewState},
 };
 
-#[derive(PartialEq, Eq)]
 pub enum DailiesAppState {
     ListView,
     EditTaskView(EditTaskViewState),
     AddTaskView(Vec<Uuid>, EditTaskViewState),
-    Exited,
 }
 
 pub enum DailiesAppEvent {
@@ -41,6 +41,7 @@ pub struct DailiesApp {
     tasks_tree_state: TasksTreeViewState,
     state: DailiesAppState,
     tasks_manager: TasksManager,
+    exit: bool,
 }
 
 impl DailiesApp {
@@ -50,15 +51,20 @@ impl DailiesApp {
             tasks_tree_state: TasksTreeViewState::new(),
             state: DailiesAppState::ListView,
             tasks_manager: task_manager,
+            exit: false,
         }
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        while self.state != DailiesAppState::Exited {
+        while !self.exit {
             self.handle_events()?;
             terminal.draw(|frame| self.draw(frame))?;
         }
         Ok(())
+    }
+
+    fn exit(&mut self) {
+        self.exit = true;
     }
 
     fn draw(&mut self, frame: &mut Frame) {
@@ -88,7 +94,7 @@ impl DailiesApp {
 
     fn transition(&mut self, event: DailiesAppEvent) {
         match event {
-            DailiesAppEvent::Exit => self.state = DailiesAppState::Exited,
+            DailiesAppEvent::Exit => self.exit(),
             DailiesAppEvent::EditTask(task_ids) => {
                 let task = self.tasks_manager.get_task(&task_ids);
 
@@ -127,7 +133,10 @@ impl Widget for &mut DailiesApp {
         if let DailiesAppState::EditTaskView(task_editor_state) = &mut self.state {
             let mut task_editor = crate::view::edit_task_view::EditTaskView::new();
             let popup_block = Block::bordered()
-                .title("Editing")
+                .title(Line::from(vec![
+                    "Edit Task ".into(),
+                    task_editor_state.get_task_id().to_string().dim().into(),
+                ]))
                 .border_set(border::ROUNDED);
             let centered_area =
                 area.centered(Constraint::Percentage(60), Constraint::Percentage(20));

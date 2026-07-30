@@ -40,6 +40,12 @@ impl<'a> TasksTreeViewState {
     }
 
     fn handle_key_press(&mut self, key_event: event::KeyEvent) -> DailiesAppEvent {
+        if (key_event.modifiers.contains(event::KeyModifiers::CONTROL)
+            || key_event.modifiers.contains(event::KeyModifiers::ALT))
+            && key_event.code == KeyCode::Char('c')
+        {
+            return DailiesAppEvent::Exit;
+        }
         match key_event.code {
             KeyCode::Char('q') => return DailiesAppEvent::Exit,
             KeyCode::Char('p' | ' ') => {
@@ -101,7 +107,7 @@ impl<'a> TasksTreeView<'a> {
             line = Line::from(vec![
                 task.name.clone().green().bold(),
                 ": ".into(),
-                task.description.clone().italic().gray(),
+                task.description.clone().gray(),
                 format!(" {}:{:02}:{:02}", hour, minute, second)
                     .green()
                     .bold(),
@@ -110,7 +116,7 @@ impl<'a> TasksTreeView<'a> {
             line = Line::from(vec![
                 task.name.clone().bold(),
                 ": ".into(),
-                task.description.clone().gray().italic(),
+                task.description.clone().gray(),
             ]);
         }
 
