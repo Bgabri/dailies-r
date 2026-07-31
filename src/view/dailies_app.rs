@@ -87,6 +87,7 @@ impl DailiesApp {
         }) = event
         {
             self.exit();
+            return Ok(());
         }
 
         let app_event: DailiesAppEvent = match &mut self.state {

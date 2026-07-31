@@ -33,6 +33,9 @@ pub struct Task {
     pub tags: Vec<TaskTag>,
     pub subtasks: Vec<Task>,
     pub priority: u8,
+    // pub local_path: Option<String>,
+    // pub associations: Vec<String>,
+
 }
 
 
