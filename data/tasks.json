@@ -11,8 +11,8 @@
     "subtasks": [
       {
         "id": "75128bb3-eb29-4716-9bf7-92a20b4fa594",
-        "name": "e",
-        "description": "sub task e",
+        "name": "g",
+        "description": "sub task g",
         "created_at": "2026-07-26T18:31:44.397045061+02:00",
         "ended_at": null,
         "sessions": [],
@@ -21,8 +21,8 @@
         "subtasks": [
           {
             "id": "dfe430f0-2f6e-4030-afd0-287f8ece8920",
-            "name": "g",
-            "description": "sub sub task g",
+            "name": "i",
+            "description": "sub sub task i",
             "created_at": "2026-07-31T19:04:21.017135853+02:00",
             "ended_at": null,
             "sessions": [],
@@ -36,8 +36,8 @@
       },
       {
         "id": "d9cb8eeb-a604-48f0-8c33-17ca5f2fa18e",
-        "name": "f",
-        "description": "sibling task f",
+        "name": "h",
+        "description": "sibling task h",
         "created_at": "2026-07-31T19:07:05.473578943+02:00",
         "ended_at": null,
         "sessions": [],
@@ -83,6 +83,30 @@
     "name": "d",
     "description": "task d completed",
     "created_at": "2026-07-31T19:05:01.947373449+02:00",
+    "ended_at": "2026-07-31T19:32:57.237677294+02:00",
+    "sessions": [],
+    "goals": [],
+    "tags": [],
+    "subtasks": [],
+    "priority": 0
+  },
+  {
+    "id": "d5af0a09-9d62-4551-b37f-a87aa4f8501d",
+    "name": "eeeeeEEEEEEeeeeeEEEEEEeeeeeEEEEEEeeeeeEEEEEEeeeeeEEEEEEeeeeeEEEEEEeeeeeEEEEEEeeeeeEEEEEEeeeeeEEEEEE",
+    "description": "long name task e",
+    "created_at": "2026-07-31T19:28:15.121309165+02:00",
+    "ended_at": null,
+    "sessions": [],
+    "goals": [],
+    "tags": [],
+    "subtasks": [],
+    "priority": 0
+  },
+  {
+    "id": "c66f5745-0f75-4f51-a0aa-b3844db73a86",
+    "name": "f",
+    "description": "long description task fffffFFFFFFfffffFFFFFFfffffFFFFFFfffffFFFFFFfffffFFFFFFfffffFFFFFFfffffFFFFFFfffffFFFFFFfffffFFFFFF",
+    "created_at": "2026-07-31T19:30:11.437183410+02:00",
     "ended_at": null,
     "sessions": [],
     "goals": [],
