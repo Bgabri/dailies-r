@@ -1,14 +1,11 @@
-use std::f32::consts::E;
-
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{self, Constraint, Layout, Rect},
-    style::{Color, Modifier, Style, Stylize},
-    text::Line,
-    widgets::{Paragraph, StatefulWidget, Widget},
+    style::{Color, Style, Stylize},
+    widgets::{StatefulWidget, Widget},
 };
-use ratatui_textarea::{Input, Key, TextArea};
+use ratatui_textarea::TextArea;
 use tui_tree_widget::Block;
 use uuid::Uuid;
 
@@ -77,18 +74,18 @@ impl EditTaskViewState {
         self.task.description = self.description_text_area.lines().join("\n");
     }
 
-    pub fn handle_events(&mut self) -> std::io::Result<DailiesAppEvent> {
-        match event::read()? {
+    pub fn handle_events(&mut self, event: Event) -> DailiesAppEvent {
+        match event {
             Event::Key(KeyEvent {
                 code: KeyCode::Esc, ..
-            }) => return Ok(DailiesAppEvent::Cancel),
+            }) => return DailiesAppEvent::Cancel,
 
             Event::Key(KeyEvent {
                 code: KeyCode::Enter,
                 ..
             }) => {
                 self.update_values();
-                return Ok(DailiesAppEvent::Save);
+                return DailiesAppEvent::Save;
             }
             Event::Key(KeyEvent {
                 code: KeyCode::Tab | KeyCode::Down,
@@ -109,7 +106,7 @@ impl EditTaskViewState {
                 _ => {}
             },
         }
-        Ok(DailiesAppEvent::None)
+        DailiesAppEvent::None
     }
 
     pub fn get_task(&self) -> Task {

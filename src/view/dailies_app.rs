@@ -1,24 +1,22 @@
 use std::{io, time::Duration};
 
-use crossterm::event;
+use crossterm::event::{self, Event, KeyEvent};
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
     layout::{Constraint, Rect},
-    style::{Style, Stylize},
+    style::Stylize,
     symbols::border,
-    text::{self, Line},
+    text::Line,
     widgets::{Block, Clear, StatefulWidget, Widget},
 };
-use ratatui_textarea::TextArea;
 use uuid::Uuid;
 
-use crate::{model::task, view::{
-    confirm_view::{ConfirmView, ConfirmViewState}, dailies_app::DailiesAppEvent::None, edit_task_view::EditTaskViewState, tasks_tree::{TasksTreeView, TasksTreeViewState},
-}};
-use crate::{
-    model::{task::Task, tasks_manager::TasksManager},
-    view::dailies_app::DailiesAppState::DeleteTaskView,
+use crate::model::{task::Task, tasks_manager::TasksManager};
+use crate::view::{
+    confirm_view::{ConfirmView, ConfirmViewState},
+    edit_task_view::EditTaskViewState,
+    tasks_tree::{TasksTreeView, TasksTreeViewState},
 };
 
 pub enum DailiesAppState {
@@ -80,18 +78,27 @@ impl DailiesApp {
             return Ok(());
         }
 
+        let event = event::read()?;
+        if let Event::Key(KeyEvent {
+            code: event::KeyCode::Char('c' | 'd' | 'q'),
+            modifiers: event::KeyModifiers::CONTROL,
+            ..
+        }) = event
+        {
+            self.exit();
+        }
+
         let app_event: DailiesAppEvent = match &mut self.state {
-            DailiesAppState::ListView => self.tasks_tree_state.handle_events()?,
+            DailiesAppState::ListView => self.tasks_tree_state.handle_events(event),
             DailiesAppState::EditTaskView(_, task_editor_state) => {
-                task_editor_state.handle_events()?
+                task_editor_state.handle_events(event)
             }
             DailiesAppState::AddTaskView(_, task_editor_state) => {
-                task_editor_state.handle_events()?
+                task_editor_state.handle_events(event)
             }
             DailiesAppState::DeleteTaskView(_, confirm_view_state) => {
-                confirm_view_state.handle_events()?
+                confirm_view_state.handle_events(event)
             }
-            _ => None,
         };
 
         self.transition(app_event);
@@ -121,14 +128,11 @@ impl DailiesApp {
             }
             DailiesAppEvent::DeleteTask(task_ids) => {
                 if let Some(task) = self.tasks_manager.get_task(&task_ids) {
-                let message:Line = Line::from(
-                    vec![
+                    let message: Line = Line::from(vec![
                         "Delete task '".into(),
                         task.name.clone().italic(),
-
-                        "'?".into()
-                    ]
-                );
+                        "'?".into(),
+                    ]);
                     self.state =
                         DailiesAppState::DeleteTaskView(task_ids, ConfirmViewState::new(message));
                 }
@@ -205,7 +209,7 @@ impl Widget for &mut DailiesApp {
 
                 Clear.render(centered_area, buf);
                 let confirm_view = ConfirmView::new();
-                
+
                 // TODO: Fix the lifetime issue here
                 confirm_view.render(centered_area, buf, &mut confirm_view_state.clone());
             }

@@ -1,7 +1,7 @@
-use crossterm::event::{self, Event, KeyCode, KeyEventKind, MouseEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::Rect,
     style::{Color, Style, Stylize},
     text::Line,
     widgets::StatefulWidget,
@@ -25,18 +25,6 @@ impl<'a> TasksTreeViewState {
 
     fn get_selected(&mut self) -> Vec<Uuid> {
         self.tree_state.selected().to_vec()
-    }
-
-    fn handle_mouse_event(&mut self, mouse_event: event::MouseEvent) -> DailiesAppEvent {
-        match mouse_event.kind {
-            MouseEventKind::ScrollDown => self.tree_state.scroll_down(1),
-            MouseEventKind::ScrollUp => self.tree_state.scroll_up(1),
-            MouseEventKind::Down(_button) => self
-                .tree_state
-                .click_at(Position::new(mouse_event.column, mouse_event.row)),
-            _ => false,
-        };
-        DailiesAppEvent::None
     }
 
     fn handle_key_press(&mut self, key_event: event::KeyEvent) -> DailiesAppEvent {
@@ -71,13 +59,12 @@ impl<'a> TasksTreeViewState {
         DailiesAppEvent::None
     }
 
-    pub fn handle_events(&mut self) -> Result<DailiesAppEvent> {
-        match event::read()? {
+    pub fn handle_events(&mut self, event: Event) -> DailiesAppEvent {
+        match event {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
-                Ok(self.handle_key_press(key_event))
+                self.handle_key_press(key_event)
             }
-            Event::Mouse(mouse_event) => Ok(self.handle_mouse_event(mouse_event)),
-            _ => Ok(DailiesAppEvent::None),
+            _ => DailiesAppEvent::None,
         }
     }
 }

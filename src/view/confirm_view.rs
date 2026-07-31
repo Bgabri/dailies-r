@@ -1,20 +1,15 @@
-use std::f32::consts::E;
-
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
-    layout::{self, Alignment, Constraint, Flex, Layout, Rect},
-    style::{Color, Modifier, Style, Stylize},
+    layout::Rect,
+    style::Stylize,
     symbols::border,
     text::Line,
-    widgets::{Padding, Paragraph, StatefulWidget, Widget, Wrap},
+    widgets::{Paragraph, StatefulWidget, Widget, Wrap},
 };
-use ratatui_textarea::{Input, Key, TextArea};
-use std::io::Result;
 use tui_tree_widget::Block;
-use uuid::Uuid;
 
-use crate::{model::task::Task, view::dailies_app::DailiesAppEvent};
+use crate::view::dailies_app::DailiesAppEvent;
 
 #[derive(Debug, Clone)]
 pub struct ConfirmViewState<'a> {
@@ -25,19 +20,19 @@ impl<'a> ConfirmViewState<'a> {
     pub fn new(message: Line<'a>) -> Self {
         ConfirmViewState { message }
     }
-    pub fn handle_events(&mut self) -> Result<DailiesAppEvent> {
-        match event::read()? {
+    pub fn handle_events(&mut self, event: Event) -> DailiesAppEvent {
+        match event {
             Event::Key(KeyEvent {
                 code: KeyCode::Char('y' | 'Y') | KeyCode::Enter,
                 kind: KeyEventKind::Press,
                 ..
-            }) => Ok(DailiesAppEvent::Save),
+            }) => DailiesAppEvent::Save,
             Event::Key(KeyEvent {
                 code: KeyCode::Char('n' | 'N') | KeyCode::Esc,
                 kind: KeyEventKind::Press,
                 ..
-            }) => Ok(DailiesAppEvent::Cancel),
-            _ => Ok(DailiesAppEvent::None),
+            }) => DailiesAppEvent::Cancel,
+            _ => DailiesAppEvent::None,
         }
     }
 }
