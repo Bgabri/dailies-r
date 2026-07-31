@@ -64,9 +64,13 @@ impl TasksManager {
         }
     }
 
-    pub fn remove_task(&mut self, index: usize) {
-        if index < self.tasks.len() {
-            self.tasks.remove(index);
+    pub fn delete_task(&mut self, ids: &[Uuid]) {
+        if let Some((id, parent_ids)) = ids.split_last() {
+            if let Some(parent) = self.get_task_mut(parent_ids) {
+                parent.subtasks.retain(|t| &t.id != id);
+            } else if parent_ids.is_empty() {
+                self.tasks.retain(|t| &t.id != id);
+            }
         }
     }
 

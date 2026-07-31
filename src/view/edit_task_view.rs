@@ -23,6 +23,7 @@ enum EditFocus {
 pub struct EditTaskViewState {
     task: Task,
     focus: EditFocus,
+    //  TODO: remove static lifetime
     name_text_area: TextArea<'static>,
     description_text_area: TextArea<'static>,
 }
@@ -158,5 +159,5 @@ fn inactivate_text_area(textarea: &mut TextArea<'_>) {
 fn activate_text_area(textarea: &mut TextArea<'_>) {
     textarea.set_selection_style(Style::default().reversed());
     textarea.set_block(Block::default().bg(Color::Black).fg(Color::Blue));
-    textarea.set_cursor_style(Style::default().reversed());
+    textarea.set_cursor_style(Style::default().fg(Color::Reset).reversed());
 }

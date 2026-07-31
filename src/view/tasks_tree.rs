@@ -40,12 +40,6 @@ impl<'a> TasksTreeViewState {
     }
 
     fn handle_key_press(&mut self, key_event: event::KeyEvent) -> DailiesAppEvent {
-        if (key_event.modifiers.contains(event::KeyModifiers::CONTROL)
-            || key_event.modifiers.contains(event::KeyModifiers::ALT))
-            && key_event.code == KeyCode::Char('c')
-        {
-            return DailiesAppEvent::Exit;
-        }
         match key_event.code {
             KeyCode::Char('q' | 'Q') => return DailiesAppEvent::Exit,
             KeyCode::Char('p' | 'P' | ' ') => {
@@ -56,6 +50,9 @@ impl<'a> TasksTreeViewState {
             }
             KeyCode::Char('a' | 'A') => {
                 return DailiesAppEvent::AddTask(self.get_selected());
+            }
+            KeyCode::Char('d' | 'D') => {
+                return DailiesAppEvent::DeleteTask(self.get_selected());
             }
 
             // navigation

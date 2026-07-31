@@ -13,17 +13,19 @@ use ratatui::{
 use ratatui_textarea::TextArea;
 use uuid::Uuid;
 
-use crate::model::{task::Task, tasks_manager::TasksManager};
-use crate::view::{
-    dailies_app::DailiesAppEvent::None,
-    edit_task_view::EditTaskViewState,
-    tasks_tree::{TasksTreeView, TasksTreeViewState},
+use crate::{model::task, view::{
+    confirm_view::{ConfirmView, ConfirmViewState}, dailies_app::DailiesAppEvent::None, edit_task_view::EditTaskViewState, tasks_tree::{TasksTreeView, TasksTreeViewState},
+}};
+use crate::{
+    model::{task::Task, tasks_manager::TasksManager},
+    view::dailies_app::DailiesAppState::DeleteTaskView,
 };
 
 pub enum DailiesAppState {
     ListView,
     EditTaskView(Vec<Uuid>, EditTaskViewState),
     AddTaskView(Vec<Uuid>, EditTaskViewState),
+    DeleteTaskView(Vec<Uuid>, ConfirmViewState<'static>),
 }
 
 pub enum DailiesAppEvent {
@@ -31,6 +33,7 @@ pub enum DailiesAppEvent {
     EditTask(Vec<Uuid>),
     AddTask(Vec<Uuid>),
     TrackTask(Vec<Uuid>),
+    DeleteTask(Vec<Uuid>),
     Save,
     Cancel,
     None,
@@ -72,7 +75,7 @@ impl DailiesApp {
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
-        let frame_timeout = Duration::from_secs_f64(1.0 / 4.0);
+        let frame_timeout = Duration::from_secs_f64(1.0);
         if !event::poll(frame_timeout)? {
             return Ok(());
         }
@@ -85,6 +88,9 @@ impl DailiesApp {
             DailiesAppState::AddTaskView(_, task_editor_state) => {
                 task_editor_state.handle_events()?
             }
+            DailiesAppState::DeleteTaskView(_, confirm_view_state) => {
+                confirm_view_state.handle_events()?
+            }
             _ => None,
         };
 
@@ -96,9 +102,7 @@ impl DailiesApp {
         match event {
             DailiesAppEvent::Exit => self.exit(),
             DailiesAppEvent::EditTask(task_ids) => {
-                let task = self.tasks_manager.get_task(&task_ids);
-
-                if let Some(task) = task {
+                if let Some(task) = self.tasks_manager.get_task(&task_ids) {
                     self.state = DailiesAppState::EditTaskView(
                         task_ids,
                         EditTaskViewState::new(task.clone()),
@@ -115,24 +119,45 @@ impl DailiesApp {
                     .get_task_mut(&task_ids)
                     .and_then(|t| Some(t.track()));
             }
+            DailiesAppEvent::DeleteTask(task_ids) => {
+                if let Some(task) = self.tasks_manager.get_task(&task_ids) {
+                let message:Line = Line::from(
+                    vec![
+                        "Delete task '".into(),
+                        task.name.clone().italic(),
+
+                        "'?".into()
+                    ]
+                );
+                    self.state =
+                        DailiesAppState::DeleteTaskView(task_ids, ConfirmViewState::new(message));
+                }
+            }
 
             DailiesAppEvent::Save => {
-                if let DailiesAppState::EditTaskView(task_ids, task_editor_state) = &mut self.state
-                {
-                    let task = task_editor_state.get_task();
-                    self.tasks_manager.update_task(task_ids, task);
-                } else if let DailiesAppState::AddTaskView(parent_ids, task_editor_state) =
-                    &mut self.state
-                {
-                    let task = task_editor_state.get_task();
-                    self.tasks_manager.add_task(parent_ids, task);
+                match &mut self.state {
+                    DailiesAppState::EditTaskView(task_ids, task_editor_state) => {
+                        let task = task_editor_state.get_task();
+                        self.tasks_manager.update_task(task_ids, task);
+                    }
+                    DailiesAppState::AddTaskView(parent_ids, task_editor_state) => {
+                        let task = task_editor_state.get_task();
+                        self.tasks_manager.add_task(parent_ids, task);
+                    }
+                    DailiesAppState::DeleteTaskView(task_ids, _) => {
+                        self.tasks_manager.delete_task(task_ids);
+                    }
+                    _ => {}
                 }
                 self.state = DailiesAppState::ListView;
             }
 
             DailiesAppEvent::Cancel => self.state = DailiesAppState::ListView,
-            DailiesAppEvent::None => {}
+            DailiesAppEvent::None => {
+                return;
+            }
         }
+        self.tasks_manager.save_tasks();
     }
 
     fn render_edit_popup(
@@ -145,6 +170,7 @@ impl DailiesApp {
         let popup_block = Block::bordered()
             .title(Line::from(vec![
                 title.into(),
+                ": ".into(),
                 task_editor_state.get_task_id().to_string().dim().into(),
             ]))
             .border_set(border::ROUNDED);
@@ -172,6 +198,16 @@ impl Widget for &mut DailiesApp {
             }
             DailiesAppState::EditTaskView(_, task_editor_state) => {
                 DailiesApp::render_edit_popup(task_editor_state, "Edit Task", area, buf);
+            }
+            DailiesAppState::DeleteTaskView(_, confirm_view_state) => {
+                let centered_area =
+                    area.centered(Constraint::Percentage(60), Constraint::Length(3));
+
+                Clear.render(centered_area, buf);
+                let confirm_view = ConfirmView::new();
+                
+                // TODO: Fix the lifetime issue here
+                confirm_view.render(centered_area, buf, &mut confirm_view_state.clone());
             }
             _ => {}
         }
