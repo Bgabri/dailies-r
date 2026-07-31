@@ -42,6 +42,10 @@ impl<'a> TasksTreeViewState {
             KeyCode::Char('d' | 'D') => {
                 return DailiesAppEvent::DeleteTask(self.get_selected());
             }
+            KeyCode::Char('c' | 'C') => {
+                return DailiesAppEvent::CompleteTask(self.get_selected());
+            }
+            
 
             // navigation
             KeyCode::Enter | KeyCode::Char('\n') => self.tree_state.toggle_selected(),

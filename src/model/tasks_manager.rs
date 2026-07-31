@@ -38,8 +38,8 @@ impl TasksManager {
 
     pub fn save_tasks(&self) {
         let path = Self::tasks_file_path();
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).expect("Failed to create tasks directory");
+        if let Some(parent_dir) = path.parent() {
+            std::fs::create_dir_all(parent_dir).expect("Failed to create tasks directory");
         }
 
         let serialized =

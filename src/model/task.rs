@@ -106,8 +106,12 @@ impl Task {
         chrono::Duration::zero()
     }
 
-    pub fn mark_completed(&mut self) {
-        self.ended_at = Some(chrono::Local::now());
+    pub fn toggle_completed(&mut self) {
+        if self.is_completed() {
+            self.ended_at = None;
+        } else {
+            self.ended_at = Some(chrono::Local::now());
+        }
         self.end_session();
     }
 

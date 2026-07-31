@@ -32,6 +32,7 @@ pub enum DailiesAppEvent {
     AddTask(Vec<Uuid>),
     TrackTask(Vec<Uuid>),
     DeleteTask(Vec<Uuid>),
+    CompleteTask(Vec<Uuid>),
     Save,
     Cancel,
     None,
@@ -125,6 +126,11 @@ impl DailiesApp {
                 self.tasks_manager
                     .get_task_mut(&task_ids)
                     .and_then(|t| Some(t.track()));
+            }
+            DailiesAppEvent::CompleteTask(task_ids) => {
+                self.tasks_manager
+                    .get_task_mut(&task_ids)
+                    .and_then(|t| Some(t.toggle_completed()));
             }
             DailiesAppEvent::DeleteTask(task_ids) => {
                 if let Some(task) = self.tasks_manager.get_task(&task_ids) {
