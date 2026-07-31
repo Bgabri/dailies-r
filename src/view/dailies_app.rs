@@ -22,7 +22,7 @@ use crate::view::{
 
 pub enum DailiesAppState {
     ListView,
-    EditTaskView(EditTaskViewState),
+    EditTaskView(Vec<Uuid>, EditTaskViewState),
     AddTaskView(Vec<Uuid>, EditTaskViewState),
 }
 
@@ -79,7 +79,7 @@ impl DailiesApp {
 
         let app_event: DailiesAppEvent = match &mut self.state {
             DailiesAppState::ListView => self.tasks_tree_state.handle_events()?,
-            DailiesAppState::EditTaskView(task_editor_state) => {
+            DailiesAppState::EditTaskView(_, task_editor_state) => {
                 task_editor_state.handle_events()?
             }
             DailiesAppState::AddTaskView(_, task_editor_state) => {
@@ -99,7 +99,10 @@ impl DailiesApp {
                 let task = self.tasks_manager.get_task(&task_ids);
 
                 if let Some(task) = task {
-                    self.state = DailiesAppState::EditTaskView(EditTaskViewState::new(task.clone()))
+                    self.state = DailiesAppState::EditTaskView(
+                        task_ids,
+                        EditTaskViewState::new(task.clone()),
+                    )
                 }
             }
             DailiesAppEvent::AddTask(parent_ids) => {
@@ -113,10 +116,43 @@ impl DailiesApp {
                     .and_then(|t| Some(t.track()));
             }
 
+            DailiesAppEvent::Save => {
+                if let DailiesAppState::EditTaskView(task_ids, task_editor_state) = &mut self.state
+                {
+                    let task = task_editor_state.get_task();
+                    self.tasks_manager.update_task(task_ids, task);
+                } else if let DailiesAppState::AddTaskView(parent_ids, task_editor_state) =
+                    &mut self.state
+                {
+                    let task = task_editor_state.get_task();
+                    self.tasks_manager.add_task(parent_ids, task);
+                }
+                self.state = DailiesAppState::ListView;
+            }
+
             DailiesAppEvent::Cancel => self.state = DailiesAppState::ListView,
-            DailiesAppEvent::Save => {}
             DailiesAppEvent::None => {}
         }
+    }
+
+    fn render_edit_popup(
+        task_editor_state: &mut EditTaskViewState,
+        title: &str,
+        area: Rect,
+        buf: &mut Buffer,
+    ) {
+        let mut task_editor = crate::view::edit_task_view::EditTaskView::new();
+        let popup_block = Block::bordered()
+            .title(Line::from(vec![
+                title.into(),
+                task_editor_state.get_task_id().to_string().dim().into(),
+            ]))
+            .border_set(border::ROUNDED);
+        let centered_area = area.centered(Constraint::Percentage(60), Constraint::Length(4));
+
+        Clear.render(centered_area, buf);
+        task_editor.render(popup_block.inner(centered_area), buf, task_editor_state);
+        popup_block.render(centered_area, buf);
     }
 }
 
@@ -130,20 +166,14 @@ impl Widget for &mut DailiesApp {
         tasks_list.render(window.inner(area), buf, &mut self.tasks_tree_state);
         window.render(area, buf);
 
-        if let DailiesAppState::EditTaskView(task_editor_state) = &mut self.state {
-            let mut task_editor = crate::view::edit_task_view::EditTaskView::new();
-            let popup_block = Block::bordered()
-                .title(Line::from(vec![
-                    "Edit Task ".into(),
-                    task_editor_state.get_task_id().to_string().dim().into(),
-                ]))
-                .border_set(border::ROUNDED);
-            let centered_area =
-                area.centered(Constraint::Percentage(60), Constraint::Percentage(20));
-
-            Clear.render(centered_area, buf);
-            task_editor.render(popup_block.inner(centered_area), buf, task_editor_state);
-            popup_block.render(centered_area, buf);
+        match &mut self.state {
+            DailiesAppState::AddTaskView(_, task_editor_state) => {
+                DailiesApp::render_edit_popup(task_editor_state, "Add Task", area, buf);
+            }
+            DailiesAppState::EditTaskView(_, task_editor_state) => {
+                DailiesApp::render_edit_popup(task_editor_state, "Edit Task", area, buf);
+            }
+            _ => {}
         }
     }
 }

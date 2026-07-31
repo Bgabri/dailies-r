@@ -47,14 +47,14 @@ impl<'a> TasksTreeViewState {
             return DailiesAppEvent::Exit;
         }
         match key_event.code {
-            KeyCode::Char('q') => return DailiesAppEvent::Exit,
-            KeyCode::Char('p' | ' ') => {
+            KeyCode::Char('q' | 'Q') => return DailiesAppEvent::Exit,
+            KeyCode::Char('p' | 'P' | ' ') => {
                 return DailiesAppEvent::TrackTask(self.get_selected());
             }
-            KeyCode::Char('e') => {
+            KeyCode::Char('e' | 'E') => {
                 return DailiesAppEvent::EditTask(self.get_selected());
             }
-            KeyCode::Char('a') => {
+            KeyCode::Char('a' | 'A') => {
                 return DailiesAppEvent::AddTask(self.get_selected());
             }
 

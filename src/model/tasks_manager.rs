@@ -47,8 +47,21 @@ impl TasksManager {
         std::fs::write(&path, serialized).expect("Failed to write tasks to file");
     }
 
-    pub fn add_task(&mut self, task: Task) {
-        self.tasks.push(task);
+    pub fn add_task(&mut self, parent_ids: &[Uuid], task: Task) {
+        if let Some(parent) = self.get_task_mut(parent_ids) {
+            parent.subtasks.push(task);
+            return;
+        } else if parent_ids.is_empty() {
+            self.tasks.push(task);
+            return;
+        }
+    }
+
+    pub fn update_task(&mut self, ids: &[Uuid], updated_task: Task) {
+        if let Some(task) = self.get_task_mut(ids) {
+            *task = updated_task;
+            return;
+        }
     }
 
     pub fn remove_task(&mut self, index: usize) {

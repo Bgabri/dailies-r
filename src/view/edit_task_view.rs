@@ -30,11 +30,10 @@ pub struct EditTaskViewState {
 impl EditTaskViewState {
     pub fn new(task: Task) -> Self {
         let name_text_area = default_text_area(&task.name, "Enter name");
-
         let description_text_area = default_text_area(&task.description, "Enter description");
         EditTaskViewState {
             task,
-            focus: EditFocus::Name,
+            focus: EditFocus::None,
             name_text_area,
             description_text_area,
         }
@@ -58,52 +57,23 @@ impl EditTaskViewState {
         self.focus = focus;
     }
 
-    fn handle_name_event(&mut self, key_event: Event) {
-        match key_event {
-            Event::Key(KeyEvent {
-                code: KeyCode::Tab | KeyCode::BackTab,
-                modifiers: modifier,
-                ..
-            }) => {
-                self.switch_focus(EditFocus::Description);
-            }
-            Event::Key(KeyEvent {
-                code: KeyCode::Enter,
-                ..
-            }) => {}
-            _ => {
-                self.name_text_area.input(key_event);
-            }
+    fn focus_next(&mut self) {
+        match self.focus {
+            EditFocus::None => self.switch_focus(EditFocus::Name),
+            EditFocus::Name => self.switch_focus(EditFocus::Description),
+            EditFocus::Description => self.switch_focus(EditFocus::None),
         }
     }
-
-    fn handle_description_event(&mut self, key_event: Event) {
-        match key_event {
-            Event::Key(KeyEvent {
-                code: KeyCode::Tab | KeyCode::BackTab,
-                ..
-            }) => {
-                self.switch_focus(EditFocus::Name);
-            }
-            Event::Key(KeyEvent {
-                code: KeyCode::Enter,
-                ..
-            }) => {}
-            _ => {
-                self.description_text_area.input(key_event);
-            }
+    fn focus_prev(&mut self) {
+        match self.focus {
+            EditFocus::None => self.switch_focus(EditFocus::Description),
+            EditFocus::Name => self.switch_focus(EditFocus::None),
+            EditFocus::Description => self.switch_focus(EditFocus::Name),
         }
     }
-
-    fn handle_none_event(&mut self, key_event: Event) {
-        match key_event {
-            Event::Key(KeyEvent {
-                code: KeyCode::Tab, ..
-            }) => {
-                self.focus = EditFocus::Name;
-            }
-            _ => {}
-        }
+    fn update_values(&mut self) {
+        self.task.name = self.name_text_area.lines().join("\n");
+        self.task.description = self.description_text_area.lines().join("\n");
     }
 
     pub fn handle_events(&mut self) -> std::io::Result<DailiesAppEvent> {
@@ -111,15 +81,39 @@ impl EditTaskViewState {
             Event::Key(KeyEvent {
                 code: KeyCode::Esc, ..
             }) => return Ok(DailiesAppEvent::Cancel),
+
+            Event::Key(KeyEvent {
+                code: KeyCode::Enter,
+                ..
+            }) => {
+                self.update_values();
+                return Ok(DailiesAppEvent::Save);
+            }
+            Event::Key(KeyEvent {
+                code: KeyCode::Tab | KeyCode::Down,
+                ..
+            }) => self.focus_next(),
+            Event::Key(KeyEvent {
+                code: KeyCode::BackTab | KeyCode::Up,
+                ..
+            }) => self.focus_prev(),
+
             event => match self.focus {
-                EditFocus::Name => self.handle_name_event(event),
-                EditFocus::Description => self.handle_description_event(event),
-                EditFocus::None => self.handle_none_event(event),
+                EditFocus::Name => {
+                    self.name_text_area.input(event);
+                }
+                EditFocus::Description => {
+                    self.description_text_area.input(event);
+                }
+                _ => {}
             },
         }
         Ok(DailiesAppEvent::None)
     }
 
+    pub fn get_task(&self) -> Task {
+        self.task.clone()
+    }
     pub fn get_task_id(&self) -> Uuid {
         self.task.id
     }
@@ -149,22 +143,20 @@ impl StatefulWidget for &mut EditTaskView {
 fn default_text_area(value: &str, place_holder: &str) -> TextArea<'static> {
     let mut textarea = TextArea::from(vec![value]);
     textarea.set_placeholder_text(place_holder);
-    textarea.set_placeholder_style(
-        Style::default()
-            .add_modifier(Modifier::DIM)
-            .add_modifier(Modifier::ITALIC),
-    );
+    textarea.set_placeholder_style(Style::default().dim().italic());
     inactivate_text_area(&mut textarea);
     textarea
 }
 fn inactivate_text_area(textarea: &mut TextArea<'_>) {
     textarea.set_style(Style::default());
-    textarea.set_cursor_line_style(Style::default());
     textarea.set_block(Block::default());
+    textarea.set_selection_style(Style::default());
     textarea.set_cursor_style(Style::default());
+    textarea.set_cursor_line_style(Style::default());
 }
 
 fn activate_text_area(textarea: &mut TextArea<'_>) {
+    textarea.set_selection_style(Style::default().reversed());
     textarea.set_block(Block::default().bg(Color::Black).fg(Color::Blue));
-    textarea.set_cursor_style(Style::default().add_modifier(Modifier::REVERSED));
+    textarea.set_cursor_style(Style::default().reversed());
 }
