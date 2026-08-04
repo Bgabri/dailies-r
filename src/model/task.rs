@@ -34,7 +34,6 @@ pub struct Task {
     goals: Vec<Goal>,
     tags: Vec<TaskTag>,
     pub subtasks: Vec<Task>,
-    priority: u8,
     // pub local_path: Option<String>,
     associations: Vec<String>,
 }
@@ -51,7 +50,6 @@ impl Task {
             goals: Vec::new(),
             tags: Vec::new(),
             subtasks: Vec::new(),
-            priority: 0,
             associations: Vec::new(),
         }
     }
