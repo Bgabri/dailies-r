@@ -45,14 +45,18 @@ impl WindowTracker {
             true
         });
 
+        let mut tracked_tasks = Vec::new();
+
         if let Some(active_window) = &self.active_window {
             tasks_manager.iter_tree_mut(&mut |task, _depth| {
-                if task.is_associated(active_window) {
-                    self.activated_tasks.push(task.id);
+                if task.is_associated(active_window) && !task.in_session() {
+                    tracked_tasks.push(task.id);
                     task.start_session();
                 }
                 true
             });
         }
+
+        self.activated_tasks = tracked_tasks;
     }
 }

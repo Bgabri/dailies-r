@@ -86,7 +86,7 @@ impl<'a> TasksTreeView<'a> {
     fn tasks_line(task: &Task) -> Line<'_> {
         let mut line: Line;
         if task.in_session() {
-            let elapsed_time = task.elapsed_session_time();
+            let elapsed_time = task.elapsed_daily_time();
 
             let hour = elapsed_time.num_hours();
             let minute = elapsed_time.num_minutes() % 60;
