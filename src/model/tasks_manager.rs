@@ -84,6 +84,12 @@ impl TasksManager {
         }
     }
 
+    pub fn iter_tree_mut<F: FnMut(&mut Task, i32) -> bool>(&mut self, f: &mut F) {
+        for task in &mut self.tasks {
+            task.iter_tree_mut(0, f);
+        }
+    }
+
     pub fn flatten(&self) -> Vec<&Task> {
         let mut tasks = Vec::new();
         for task in &self.tasks {
@@ -92,7 +98,7 @@ impl TasksManager {
         tasks
     }
 
-    pub fn get_task(&mut self, ids: &[Uuid]) -> Option<&Task> {
+    pub fn get_task(&self, ids: &[Uuid]) -> Option<&Task> {
         for task in &self.tasks {
             if let Some(t) = task.get_subtask(ids) {
                 return Some(t);

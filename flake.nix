@@ -25,6 +25,7 @@
       in {
         # `nix build` & `nix run`:
         packages.default = naersk'.buildPackage {
+          pname = "dailies-r";
           src = ./.;
         };
       }

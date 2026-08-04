@@ -29,10 +29,12 @@
             "goals": [],
             "tags": [],
             "subtasks": [],
-            "priority": 0
+            "priority": 0,
+            "associations": []
           }
         ],
-        "priority": 0
+        "priority": 0,
+        "associations": []
       },
       {
         "id": "d9cb8eeb-a604-48f0-8c33-17ca5f2fa18e",
@@ -44,22 +46,33 @@
         "goals": [],
         "tags": [],
         "subtasks": [],
-        "priority": 0
+        "priority": 0,
+        "associations": []
       }
     ],
-    "priority": 0
+    "priority": 0,
+    "associations": []
   },
   {
     "id": "94bbdff1-7826-489e-aa8d-007e9532556b",
     "name": "b",
-    "description": "task b",
+    "description": "task b, browser association",
     "created_at": "2026-07-31T19:03:05.973519092+02:00",
     "ended_at": null,
     "sessions": [],
     "goals": [],
     "tags": [],
     "subtasks": [],
-    "priority": 0
+    "priority": 0,
+    "associations": [
+      ".*firefox.*:.*",
+      ".*chrome.*:.*",
+      ".*chromium.*:.*",
+      ".*zen.*:.*",
+      ".*vivaldi.*:.*",
+      ".*opera.*:.*",
+      ".*brave.*:.*"
+    ]
   },
   {
     "id": "5102537c-7129-49e8-940e-30718ded0144",
@@ -76,7 +89,8 @@
     "goals": [],
     "tags": [],
     "subtasks": [],
-    "priority": 0
+    "priority": 0,
+    "associations": []
   },
   {
     "id": "b96705ce-23db-490c-9496-aa19ec0c46fe",
@@ -88,7 +102,8 @@
     "goals": [],
     "tags": [],
     "subtasks": [],
-    "priority": 0
+    "priority": 0,
+    "associations": []
   },
   {
     "id": "d5af0a09-9d62-4551-b37f-a87aa4f8501d",
@@ -100,7 +115,8 @@
     "goals": [],
     "tags": [],
     "subtasks": [],
-    "priority": 0
+    "priority": 0,
+    "associations": []
   },
   {
     "id": "c66f5745-0f75-4f51-a0aa-b3844db73a86",
@@ -112,6 +128,7 @@
     "goals": [],
     "tags": [],
     "subtasks": [],
-    "priority": 0
+    "priority": 0,
+    "associations": []
   }
 ]

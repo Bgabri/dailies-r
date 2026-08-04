@@ -12,7 +12,7 @@ use ratatui::{
 };
 use uuid::Uuid;
 
-use crate::model::{task::Task, tasks_manager::TasksManager};
+use crate::model::{task::Task, tasks_manager::TasksManager, window_tracker::WindowTracker};
 use crate::view::{
     confirm_view::{ConfirmView, ConfirmViewState},
     edit_task_view::EditTaskViewState,
@@ -43,16 +43,18 @@ pub struct DailiesApp {
     tasks_tree_state: TasksTreeViewState,
     state: DailiesAppState,
     tasks_manager: TasksManager,
+    window_tracker: WindowTracker,
     exit: bool,
 }
 
 impl DailiesApp {
-    pub fn new(task_manager: TasksManager) -> Self {
+    pub fn new(tasks_manager: TasksManager) -> Self {
         DailiesApp {
             title: "Task Manager".to_string(),
             tasks_tree_state: TasksTreeViewState::new(),
             state: DailiesAppState::ListView,
-            tasks_manager: task_manager,
+            tasks_manager: tasks_manager,
+            window_tracker: WindowTracker::new(),
             exit: false,
         }
     }
@@ -60,6 +62,7 @@ impl DailiesApp {
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while !self.exit {
             self.handle_events()?;
+            self.window_tracker.track_tasks(&mut self.tasks_manager);
             terminal.draw(|frame| self.draw(frame))?;
         }
         Ok(())

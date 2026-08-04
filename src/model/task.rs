@@ -1,6 +1,7 @@
 use std::{fmt::Debug, hash};
 
 use chrono::{DateTime, Local};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -17,27 +18,26 @@ pub enum TaskTag {
     Other(String),
 }
 
-
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(default)]
+#[derive(Default)]
 pub struct Task {
     pub id: uuid::Uuid,
     pub name: String,
     pub description: String,
 
-    pub created_at: DateTime<Local>,
-    pub ended_at: Option<DateTime<Local>>,
+    created_at: DateTime<Local>,
+    ended_at: Option<DateTime<Local>>,
 
-    pub sessions: Vec<Session>,
+    sessions: Vec<Session>,
 
-    pub goals: Vec<Goal>,
-    pub tags: Vec<TaskTag>,
+    goals: Vec<Goal>,
+    tags: Vec<TaskTag>,
     pub subtasks: Vec<Task>,
-    pub priority: u8,
+    priority: u8,
     // pub local_path: Option<String>,
-    // pub associations: Vec<String>,
-
+    associations: Vec<String>,
 }
-
 
 impl Task {
     pub fn new(name: String, description: String) -> Self {
@@ -52,6 +52,7 @@ impl Task {
             tags: Vec::new(),
             subtasks: Vec::new(),
             priority: 0,
+            associations: Vec::new(),
         }
     }
 
@@ -70,7 +71,7 @@ impl Task {
         }
     }
 
-    fn start_session(&mut self) {
+    pub fn start_session(&mut self) {
         if self.in_session() {
             return;
         }
@@ -81,7 +82,7 @@ impl Task {
         self.sessions.push(session);
     }
 
-    fn end_session(&mut self) {
+    pub fn end_session(&mut self) {
         if let Some(session) = self.sessions.last_mut() {
             session.end = Some(chrono::Local::now());
         }
@@ -122,6 +123,13 @@ impl Task {
         self.ended_at.is_some()
     }
 
+    pub fn is_associated(&self, window: &str) -> bool {
+        
+        self.associations.iter().any(|a| {
+            Regex::new(a).unwrap().is_match(window)
+        }) 
+    }
+
     pub fn to_string(&self) -> String {
         let mut out = format!("Task: {}", self.name);
         for subtask in &self.subtasks {
@@ -136,6 +144,15 @@ impl Task {
         }
         for subtask in &self.subtasks {
             subtask.iter_tree(depth + 1, f);
+        }
+    }
+
+    pub fn iter_tree_mut<F: FnMut(&mut Task, i32)-> bool>(&mut self, depth: i32, f: &mut F) {
+        if !f(self, depth) {
+            return;
+        }
+        for subtask in &mut self.subtasks {
+            subtask.iter_tree_mut(depth + 1, f);
         }
     }
 
