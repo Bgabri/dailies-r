@@ -3,6 +3,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{self, Constraint, Layout, Rect},
     style::{Color, Style, Stylize},
+    text::Span,
     widgets::{StatefulWidget, Widget},
 };
 use ratatui_textarea::TextArea;
@@ -11,10 +12,12 @@ use uuid::Uuid;
 
 use crate::{model::task::Task, view::dailies_app::DailiesAppEvent};
 
+#[derive(PartialEq, Eq)]
 enum EditFocus {
     Name,
     Description,
     Association(usize),
+    AddAssociation,
     None,
 }
 
@@ -50,6 +53,7 @@ impl EditTaskViewState {
             EditFocus::Name => Some(&mut self.name_text_area),
             EditFocus::Description => Some(&mut self.description_text_area),
             EditFocus::Association(i) => self.association_text_areas.get_mut(i),
+            EditFocus::AddAssociation => None,
             EditFocus::None => None,
         }
     }
@@ -72,29 +76,22 @@ impl EditTaskViewState {
                 if !self.association_text_areas.is_empty() {
                     self.switch_focus(EditFocus::Association(0));
                 } else {
-                    self.switch_focus(EditFocus::None);
+                    self.switch_focus(EditFocus::AddAssociation);
                 }
             }
             EditFocus::Association(n) => {
                 if n + 1 < self.association_text_areas.len() {
                     self.switch_focus(EditFocus::Association(n + 1));
                 } else {
-                    self.switch_focus(EditFocus::None);
+                    self.switch_focus(EditFocus::AddAssociation);
                 }
             }
+            EditFocus::AddAssociation => self.switch_focus(EditFocus::None),
         }
     }
     fn focus_prev(&mut self) {
         match self.focus {
-            EditFocus::None => {
-                if !self.association_text_areas.is_empty() {
-                    self.switch_focus(EditFocus::Association(
-                        self.association_text_areas.len() - 1,
-                    ));
-                } else {
-                    self.switch_focus(EditFocus::None);
-                }
-            }
+            EditFocus::None => self.switch_focus(EditFocus::AddAssociation),
             EditFocus::Name => self.switch_focus(EditFocus::None),
             EditFocus::Description => self.switch_focus(EditFocus::Name),
             EditFocus::Association(n) => {
@@ -104,11 +101,27 @@ impl EditTaskViewState {
                     self.switch_focus(EditFocus::Description);
                 }
             }
+            EditFocus::AddAssociation => {
+                if !self.association_text_areas.is_empty() {
+                    self.switch_focus(EditFocus::Association(
+                        self.association_text_areas.len() - 1,
+                    ));
+                } else {
+                    self.switch_focus(EditFocus::Description);
+                }
+            }
         }
     }
     fn update_values(&mut self) {
         self.task.name = self.name_text_area.lines().join("\n");
         self.task.description = self.description_text_area.lines().join("\n");
+        self.task.associations = Vec::new();
+        for association_text_area in &self.association_text_areas {
+            let association = association_text_area.lines().join("\n");
+            if !association.is_empty() {
+                self.task.associations.push(association);
+            }
+        }
     }
 
     fn handle_text_event(&mut self, event: Event) {
@@ -122,6 +135,19 @@ impl EditTaskViewState {
             EditFocus::Association(i) => {
                 if let Some(text_area) = self.association_text_areas.get_mut(i) {
                     text_area.input(event);
+                }
+            }
+            EditFocus::AddAssociation => {
+                if let Event::Key(KeyEvent {
+                    code: KeyCode::Char(' ' | 'a' | 'A'),
+                    ..
+                }) = event
+                {
+                    self.association_text_areas
+                        .push(default_text_area("", "Enter association"));
+                    self.switch_focus(EditFocus::Association(
+                        self.association_text_areas.len() - 1,
+                    ));
                 }
             }
             EditFocus::None => {}
@@ -186,9 +212,15 @@ impl StatefulWidget for &mut EditTaskView {
             .direction(layout::Direction::Horizontal)
             .constraints(vec![
                 Constraint::Min(5);
-                state.association_text_areas.len()
+                state.association_text_areas.len() + 1
             ])
             .split(layout[2]);
+        let mut add_association = Span::from(" [+] ");
+        if state.focus == EditFocus::AddAssociation {
+            add_association =
+                add_association.style(Style::default().bg(Color::Black).fg(Color::Blue));
+        }
+        add_association.render(association_layout[association_layout.len() - 1], buf);
 
         for (i, association_text_area) in state.association_text_areas.iter_mut().enumerate() {
             association_text_area.render(association_layout[i], buf);
