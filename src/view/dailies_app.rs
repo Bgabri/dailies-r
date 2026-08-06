@@ -188,7 +188,7 @@ impl DailiesApp {
                 task_editor_state.get_task_id().to_string().dim().into(),
             ]))
             .border_set(border::ROUNDED);
-        let centered_area = area.centered(Constraint::Percentage(60), Constraint::Length(4));
+        let centered_area = area.centered(Constraint::Percentage(60), Constraint::Length(10));
 
         Clear.render(centered_area, buf);
         task_editor.render(popup_block.inner(centered_area), buf, task_editor_state);

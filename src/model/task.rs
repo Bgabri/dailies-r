@@ -35,7 +35,7 @@ pub struct Task {
     tags: Vec<TaskTag>,
     pub subtasks: Vec<Task>,
     // pub local_path: Option<String>,
-    associations: Vec<String>,
+    pub associations: Vec<String>,
 }
 
 impl Task {
@@ -45,12 +45,7 @@ impl Task {
             name,
             description,
             created_at: chrono::Local::now(),
-            ended_at: None,
-            sessions: Vec::new(),
-            goals: Vec::new(),
-            tags: Vec::new(),
-            subtasks: Vec::new(),
-            associations: Vec::new(),
+            ..Default::default()
         }
     }
 
@@ -61,6 +56,7 @@ impl Task {
     pub fn add_subtask(&mut self, subtask: Task) {
         self.subtasks.push(subtask);
     }
+
     pub fn in_session(&self) -> bool {
         if let Some(session) = self.sessions.last() {
             session.end.is_none()
@@ -108,6 +104,24 @@ impl Task {
         chrono::Duration::zero()
     }
 
+    pub fn elapsed_daily_time(&self) -> chrono::Duration {
+        let today = chrono::Local::now().date_naive();
+        let mut total_duration = chrono::Duration::zero();
+
+        for session in &self.sessions {
+            let session_date = session.start.date_naive();
+            if session_date == today {
+                if let Some(end) = session.end {
+                    total_duration = total_duration + (end - session.start);
+                } else {
+                    total_duration = total_duration + (chrono::Local::now() - session.start);
+                }
+            }
+        }
+
+        total_duration
+    }
+
     pub fn toggle_completed(&mut self) {
         if self.is_completed() {
             self.ended_at = None;
@@ -122,11 +136,17 @@ impl Task {
     }
 
     pub fn is_associated(&self, window: &str) -> bool {
-        
-        self.associations.iter().any(|a| {
-            Regex::new(a).unwrap().is_match(window)
-        }) 
+        self.associations
+            .iter()
+            .any(|a| Regex::new(a).unwrap().is_match(window))
     }
+
+    // pub fn is_in_local_path(&self, path: &str) -> bool {
+    //     if let Some(local_path) = &self.local_path {
+    //         return local_path == path;
+    //     }
+    //     false
+    // }
 
     pub fn to_string(&self) -> String {
         let mut out = format!("Task: {}", self.name);
@@ -145,7 +165,7 @@ impl Task {
         }
     }
 
-    pub fn iter_tree_mut<F: FnMut(&mut Task, i32)-> bool>(&mut self, depth: i32, f: &mut F) {
+    pub fn iter_tree_mut<F: FnMut(&mut Task, i32) -> bool>(&mut self, depth: i32, f: &mut F) {
         if !f(self, depth) {
             return;
         }

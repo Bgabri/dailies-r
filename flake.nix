@@ -25,6 +25,10 @@
       in {
         # `nix build` & `nix run`:
         packages.default = naersk'.buildPackage {
+          nativeBuildInputs = [
+            pkgs.dbus.dev
+            pkgs.pkg-config
+          ];
           pname = "dailies-r";
           src = ./.;
         };
