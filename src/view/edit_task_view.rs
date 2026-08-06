@@ -1,10 +1,6 @@
 use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{
-    buffer::Buffer,
-    layout::{self, Constraint, Layout, Rect},
-    style::{Color, Style, Stylize},
-    text::Span,
-    widgets::{StatefulWidget, Widget},
+    buffer::Buffer, layout::{self, Constraint, Flex, Layout, Rect}, style::{Color, Style, Stylize}, text::Span, widgets::{StatefulWidget, Widget},
 };
 use ratatui_textarea::TextArea;
 use tui_tree_widget::Block;
@@ -209,6 +205,9 @@ impl StatefulWidget for &mut EditTaskView {
         state.description_text_area.render(layout[1], buf);
 
         let association_layout = Layout::default()
+            .flex(
+                Flex::SpaceBetween
+            )
             .direction(layout::Direction::Horizontal)
             .constraints(vec![
                 Constraint::Min(5);

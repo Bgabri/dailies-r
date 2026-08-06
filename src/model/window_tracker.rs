@@ -1,61 +1,70 @@
+use std::time::{Duration, Instant};
+
 use uuid::Uuid;
 
 use crate::model::tasks_manager;
 
+const DEBOUNCE: Duration = Duration::from_secs(60);
+
 pub struct WindowTracker {
-    active_window: Option<String>,
-    activated_tasks: Vec<Uuid>,
+    activated_tasks: Vec<(Uuid, Instant)>,
 }
 
 impl WindowTracker {
     pub fn new() -> Self {
         WindowTracker {
-            active_window: None,
             activated_tasks: Vec::new(),
         }
     }
-    #[cfg(target_os = "linux")]
-    pub fn find_active_window(&self) -> Option<String> {
-        let window_info = kdotool::get_active_window_info();
-        window_info
-            .ok()
-            .map(|info| format!("{}:{}", info.class_name, info.title))
-    }
-    #[cfg(not(target_os = "linux"))]
-    fn find_active_window(&self) -> Option<String> {
-        None
+    pub fn get_active_window(&self) -> Option<String> {
+        #[cfg(target_os = "linux")]
+        {
+            let window_info = kdotool::get_active_window_info();
+            window_info
+                .ok()
+                .map(|info| format!("{}:{}", info.class_name, info.title))
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            None
+        }
     }
 
-    fn update_active_window(&mut self) -> bool {
-        let prev_window = self.active_window.clone();
-        self.active_window = self.find_active_window();
-
-        prev_window != self.active_window
+    fn get_open_windows(&self) -> Vec<String> {
+        Vec::new()
     }
 
     pub fn track_tasks(&mut self, tasks_manager: &mut tasks_manager::TasksManager) {
-        if !self.update_active_window() {
-            return;
-        }
-
-        tasks_manager.iter_tree_mut(&mut |task, _depth| {
-            if self.activated_tasks.contains(&task.id) {
-                task.end_session();
-            }
-            true
-        });
-
+        let now = Instant::now();
+        let active_window = self.get_active_window();
         let mut tracked_tasks = Vec::new();
 
-        if let Some(active_window) = &self.active_window {
-            tasks_manager.iter_tree_mut(&mut |task, _depth| {
-                if task.is_associated(active_window) && !task.in_session() {
-                    tracked_tasks.push(task.id);
-                    task.start_session();
+        tasks_manager.iter_tree_mut(&mut |task, _| {
+            if let Some((_, last_activated_at)) =
+                self.activated_tasks.iter().find(|(id, _)| *id == task.id)
+            {
+                if let Some(active_window) = &active_window
+                    && task.is_associated(active_window)
+                {
+                    tracked_tasks.push((task.id, now));
+                    if !task.in_session() {
+                        task.start_session();
+                    }
+                } else if now.duration_since(*last_activated_at) >= DEBOUNCE {
+                    task.end_session();
+                } else {
+                    tracked_tasks.push((task.id, *last_activated_at));
                 }
-                true
-            });
-        }
+            } else if let Some(active_window) = &active_window
+                && task.is_associated(active_window)
+                && !task.in_session()
+            {
+                tracked_tasks.push((task.id, now));
+                task.start_session();
+            }
+
+            true
+        });
 
         self.activated_tasks = tracked_tasks;
     }
