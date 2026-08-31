@@ -12,10 +12,10 @@
   - [ ] move task
   - [x] complete task
   - [x] track task
-    - [ ] auto track process matching
+    - [-] auto track process matching
   - [x] delete task
   - [ ] time spent overview/ task analysis
-    - [ ] stacked 
+    - [ ] stacked
   - [ ] local tasks (visible only in given dir)
   - [ ] task info?/analysis
 
