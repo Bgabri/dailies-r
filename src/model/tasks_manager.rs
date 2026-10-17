@@ -1,7 +1,10 @@
+use chrono::{DateTime, Datelike, Duration, Local, NaiveTime};
 use uuid::Uuid;
 
 use crate::model::task::Task;
 use std::path::PathBuf;
+
+const NAIVE_TIME_MAX: NaiveTime = NaiveTime::from_hms_opt(23, 59, 59).unwrap();
 
 pub struct TasksManager {
     tasks: Vec<Task>,
@@ -114,5 +117,39 @@ impl TasksManager {
             }
         }
         None
+    }
+
+    pub fn get_daily_report(&self, day: DateTime<Local>) -> Vec<(String, Duration)> {
+        let day_start = day.with_time(NaiveTime::MIN).unwrap();
+        let day_end = day.with_time(NAIVE_TIME_MAX).unwrap();
+
+        let mut report: Vec<(String, Duration)> = Vec::new();
+
+        for task in self.get_tasks() {
+            let time_spent = task.time_spent_recursive(day_start, day_end);
+            report.push((task.name.clone(), time_spent));
+        }
+
+        report
+    }
+
+    pub fn get_weekly_report(&self, day: DateTime<Local>) -> Vec<(String, Vec<Duration>)> {
+        let mut report: Vec<(String, Vec<Duration>)> = Vec::new();
+
+        let week_start = day.with_time(NaiveTime::MIN).unwrap()
+            - Duration::days(day.weekday().num_days_from_monday() as i64);
+
+        for task in self.get_tasks() {
+            let mut time_spent_per_day: Vec<Duration> = Vec::new();
+            for day_offset in 0..7 {
+                let day_start = week_start + Duration::days(day_offset);
+                let day_end = day_start + Duration::days(1);
+                let time_spent = task.time_spent_recursive(day_start, day_end);
+                time_spent_per_day.push(time_spent);
+            }
+            report.push((task.name.clone(), time_spent_per_day));
+        }
+
+        report
     }
 }

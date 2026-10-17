@@ -1,4 +1,4 @@
-use std::{fmt::Debug, hash};
+use std::{fmt::Debug, hash, path::PathBuf};
 
 use chrono::{DateTime, Local};
 use regex::Regex;
@@ -34,7 +34,7 @@ pub struct Task {
     goals: Vec<Goal>,
     tags: Vec<TaskTag>,
     pub subtasks: Vec<Task>,
-    // pub local_path: Option<String>,
+    pub local_path: Option<PathBuf>,
     pub associations: Vec<String>,
 }
 
@@ -141,12 +141,21 @@ impl Task {
             .any(|a| Regex::new(a).unwrap().is_match(window))
     }
 
-    // pub fn is_in_local_path(&self, path: &str) -> bool {
-    //     if let Some(local_path) = &self.local_path {
-    //         return local_path == path;
-    //     }
-    //     false
-    // }
+    pub fn make_local_path(&mut self) {
+        if let Some(path) = std::env::current_dir().ok() {
+            self.local_path = Some(path);
+        }
+    }
+
+    pub fn is_in_local_path(&self) -> bool {
+        if let Ok(current_path) = std::env::current_dir()
+            && let Some(local_path) = &self.local_path
+        {
+            return local_path == &current_path;
+        }
+
+        false
+    }
 
     pub fn to_string(&self) -> String {
         let mut out = format!("Task: {}", self.name);
@@ -214,6 +223,45 @@ impl Task {
         }
 
         None
+    }
+
+    pub fn time_spent_recursive(
+        &self,
+        start: DateTime<Local>,
+        end: DateTime<Local>,
+    ) -> chrono::Duration {
+        let mut total_duration = self.time_spent(start, end);
+
+        for subtask in &self.subtasks {
+            total_duration = total_duration + subtask.time_spent_recursive(start, end);
+        }
+
+        total_duration
+    }
+
+    pub fn time_spent(&self, start: DateTime<Local>, end: DateTime<Local>) -> chrono::Duration {
+        let mut total_duration = chrono::Duration::zero();
+
+        for session in self.sessions.iter().rev() {
+            let session_start = session.start;
+            let session_end = session.end.unwrap_or_else(|| chrono::Local::now());
+
+            if session_end < start {
+                // sessions is sorted, so we can break early
+                break;
+            }
+
+            if session_start > end {
+                continue;
+            }
+
+            let overlap_start = session_start.max(start);
+            let overlap_end = session_end.min(end);
+
+            total_duration = total_duration + (overlap_end - overlap_start);
+        }
+
+        total_duration
     }
 }
 
