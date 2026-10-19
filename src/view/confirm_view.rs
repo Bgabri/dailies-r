@@ -9,7 +9,8 @@ use ratatui::{
 };
 use tui_tree_widget::Block;
 
-use crate::view::dailies_app::DailiesAppEvent;
+use crate::view::task_manager_view::ManagerViewEvent;
+
 
 #[derive(Debug, Clone)]
 pub struct ConfirmViewState<'a> {
@@ -20,19 +21,19 @@ impl<'a> ConfirmViewState<'a> {
     pub fn new(message: Line<'a>) -> Self {
         ConfirmViewState { message }
     }
-    pub fn handle_events(&mut self, event: Event) -> DailiesAppEvent {
+    pub fn handle_events(&mut self, event: Event) -> ManagerViewEvent {
         match event {
             Event::Key(KeyEvent {
                 code: KeyCode::Char('y' | 'Y') | KeyCode::Enter,
                 kind: KeyEventKind::Press,
                 ..
-            }) => DailiesAppEvent::Save,
+            }) => ManagerViewEvent::Save,
             Event::Key(KeyEvent {
                 code: KeyCode::Char('n' | 'N') | KeyCode::Esc,
                 kind: KeyEventKind::Press,
                 ..
-            }) => DailiesAppEvent::Cancel,
-            _ => DailiesAppEvent::None,
+            }) => ManagerViewEvent::Cancel,
+            _ => ManagerViewEvent::None,
         }
     }
 }

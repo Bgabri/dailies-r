@@ -4,3 +4,4 @@ pub mod dailies_cli;
 pub mod edit_task_view;
 pub mod tasks_tree;
 pub mod report_view;
+pub mod task_manager_view;

@@ -6,7 +6,7 @@ use ratatui_textarea::TextArea;
 use tui_tree_widget::Block;
 use uuid::Uuid;
 
-use crate::{model::task::Task, view::dailies_app::DailiesAppEvent};
+use crate::{model::task::Task, view::{dailies_app::DailiesAppEvent, task_manager_view::ManagerViewEvent}};
 
 #[derive(PartialEq, Eq)]
 enum EditFocus {
@@ -150,18 +150,18 @@ impl EditTaskViewState {
         }
     }
 
-    pub fn handle_events(&mut self, event: Event) -> DailiesAppEvent {
+    pub fn handle_events(&mut self, event: Event) -> ManagerViewEvent {
         match event {
             Event::Key(KeyEvent {
                 code: KeyCode::Esc, ..
-            }) => return DailiesAppEvent::Cancel,
+            }) => return ManagerViewEvent::Cancel,
 
             Event::Key(KeyEvent {
                 code: KeyCode::Enter,
                 ..
             }) => {
                 self.update_values();
-                return DailiesAppEvent::Save;
+                return ManagerViewEvent::Save;
             }
             Event::Key(KeyEvent {
                 code: KeyCode::Tab | KeyCode::Down,
@@ -174,7 +174,7 @@ impl EditTaskViewState {
 
             event => self.handle_text_event(event),
         }
-        DailiesAppEvent::None
+        ManagerViewEvent::None
     }
 
     pub fn get_task(&self) -> Task {

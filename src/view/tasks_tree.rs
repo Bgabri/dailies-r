@@ -10,7 +10,7 @@ use std::io::Result;
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 use uuid::Uuid;
 
-use crate::{model::task::Task, view::dailies_app::DailiesAppEvent};
+use crate::{model::task::Task, view::{dailies_app::DailiesAppEvent, task_manager_view::ManagerViewEvent}};
 
 pub struct TasksTreeViewState {
     tree_state: TreeState<Uuid>,
@@ -27,25 +27,24 @@ impl<'a> TasksTreeViewState {
         self.tree_state.selected().to_vec()
     }
 
-    fn handle_key_press(&mut self, key_event: event::KeyEvent) -> DailiesAppEvent {
+    fn handle_key_press(&mut self, key_event: event::KeyEvent) -> ManagerViewEvent {
         match key_event.code {
-            KeyCode::Char('q' | 'Q') => return DailiesAppEvent::Exit,
+            KeyCode::Char('q' | 'Q') => return ManagerViewEvent::Exit,
             KeyCode::Char('p' | 'P' | ' ') => {
-                return DailiesAppEvent::TrackTask(self.get_selected());
+                return ManagerViewEvent::TrackTask(self.get_selected());
             }
             KeyCode::Char('e' | 'E') => {
-                return DailiesAppEvent::EditTask(self.get_selected());
+                return ManagerViewEvent::EditTask(self.get_selected());
             }
             KeyCode::Char('a' | 'A') => {
-                return DailiesAppEvent::AddTask(self.get_selected());
+                return ManagerViewEvent::AddTask(self.get_selected());
             }
             KeyCode::Char('d' | 'D') => {
-                return DailiesAppEvent::DeleteTask(self.get_selected());
+                return ManagerViewEvent::DeleteTask(self.get_selected());
             }
             KeyCode::Char('c' | 'C') => {
-                return DailiesAppEvent::CompleteTask(self.get_selected());
+                return ManagerViewEvent::CompleteTask(self.get_selected());
             }
-            
 
             // navigation
             KeyCode::Enter | KeyCode::Char('\n') => self.tree_state.toggle_selected(),
@@ -60,15 +59,15 @@ impl<'a> TasksTreeViewState {
             KeyCode::PageUp => self.tree_state.scroll_up(3),
             _ => false,
         };
-        DailiesAppEvent::None
+        ManagerViewEvent::None
     }
 
-    pub fn handle_events(&mut self, event: Event) -> DailiesAppEvent {
+    pub fn handle_events(&mut self, event: Event) -> ManagerViewEvent {
         match event {
             Event::Key(key_event) if key_event.kind == KeyEventKind::Press => {
                 self.handle_key_press(key_event)
             }
-            _ => DailiesAppEvent::None,
+            _ => ManagerViewEvent::None,
         }
     }
 }
