@@ -11,7 +11,10 @@ pub struct DailiesArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum Subcommands {
+    /// starts the task manager in interactive mode
     Interactive,
+    /// lists all detected open windows
+    Windows,
 }
 
 impl DailiesArgs {
