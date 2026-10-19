@@ -1,18 +1,18 @@
 use std::{io, time::Duration};
 
-use chrono::Local;
+use chrono::{Datelike, Local};
 use crossterm::event::{self, Event, KeyCode, KeyEvent};
 use ratatui::{
     DefaultTerminal, Frame,
     buffer::Buffer,
-    layout::{Constraint, Offset, Rect},
-    symbols::border,
-    widgets::{Block, Clear, StatefulWidget, Tabs, Widget},
+    layout::{Offset, Rect},
+    style::{Color, Style},
+    symbols::{self, border},
+    widgets::{Block, StatefulWidget, Tabs, Widget},
 };
 
 use crate::{
-    model::tasks_manager::TasksManager,
-    view::{
+    model::{tasks_manager::TasksManager, window_tracker::WindowTracker}, view::{
         report_view::{ReportView, ReportViewState},
         task_manager_view::{ManagerView, ManagerViewState},
     },
@@ -25,6 +25,7 @@ pub enum DailiesAppEvent {
     None,
 }
 
+// TODO: numerate enums
 #[derive(PartialEq)]
 pub enum DailiesAppWindow {
     ManagerTab,
@@ -33,6 +34,7 @@ pub enum DailiesAppWindow {
 pub struct DailiesApp {
     tasks_manager: TasksManager,
     window: DailiesAppWindow,
+    window_tracker: WindowTracker,
 
     manager_view_state: ManagerViewState,
     report_view_state: ReportViewState,
@@ -47,6 +49,7 @@ impl DailiesApp {
             window: DailiesAppWindow::ManagerTab,
             manager_view_state: ManagerViewState::new(),
             report_view_state: ReportViewState::new(),
+            window_tracker: WindowTracker::new(),
             tasks_manager,
             exit: false,
             frozen: false,
@@ -55,6 +58,7 @@ impl DailiesApp {
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while !self.exit {
+            self.window_tracker.track_tasks(&mut self.tasks_manager);
             self.handle_events()?;
             terminal.draw(|frame| self.draw(frame))?;
         }
@@ -145,10 +149,13 @@ impl DailiesApp {
     }
 
     fn render_tabs(&self, area: Rect, buf: &mut Buffer) {
-        let tabs = Tabs::new(vec!["Task Manager", "Report"]).select(match self.window {
-            DailiesAppWindow::ManagerTab => 0,
-            DailiesAppWindow::ReportTab => 1,
-        });
+        let tabs = Tabs::new(vec!["Task Manager", "Report"])
+            .select(match self.window {
+                DailiesAppWindow::ManagerTab => 0,
+                DailiesAppWindow::ReportTab => 1,
+            })
+            .divider(symbols::line::HORIZONTAL)
+            .highlight_style(Style::default().bold().blue().bg(Color::DarkGray));
         tabs.render(area + Offset::new(1, 0), buf);
     }
 }
@@ -162,8 +169,9 @@ impl Widget for &mut DailiesApp {
                 manager_view.render(window.inner(area), buf, &mut self.manager_view_state);
             }
             DailiesAppWindow::ReportTab => {
+                let now = Local::now();
                 let report_view =
-                    ReportView::new(self.tasks_manager.get_weekly_report(Local::now()));
+                    ReportView::new(self.tasks_manager.get_weekly_report(now), now.weekday());
                 report_view.render(window.inner(area), buf, &mut self.report_view_state);
             }
         }

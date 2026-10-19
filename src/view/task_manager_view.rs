@@ -1,9 +1,6 @@
-use std::{io, time::Duration};
 
-use chrono::Local;
-use crossterm::event::{self, Event, KeyEvent};
+use crossterm::event::Event;
 use ratatui::{
-    DefaultTerminal, Frame,
     buffer::Buffer,
     layout::{Constraint, Rect},
     style::Stylize,

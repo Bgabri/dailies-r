@@ -10,7 +10,7 @@ use std::io::Result;
 use tui_tree_widget::{Tree, TreeItem, TreeState};
 use uuid::Uuid;
 
-use crate::{model::task::Task, view::{dailies_app::DailiesAppEvent, task_manager_view::ManagerViewEvent}};
+use crate::{model::task::Task, view::task_manager_view::ManagerViewEvent};
 
 pub struct TasksTreeViewState {
     tree_state: TreeState<Uuid>,

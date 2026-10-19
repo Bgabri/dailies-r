@@ -6,7 +6,7 @@ use ratatui_textarea::TextArea;
 use tui_tree_widget::Block;
 use uuid::Uuid;
 
-use crate::{model::task::Task, view::{dailies_app::DailiesAppEvent, task_manager_view::ManagerViewEvent}};
+use crate::{model::task::Task, view::task_manager_view::ManagerViewEvent};
 
 #[derive(PartialEq, Eq)]
 enum EditFocus {
