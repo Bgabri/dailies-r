@@ -24,6 +24,7 @@ pub struct ReportView {
     weekday: Weekday,
 }
 
+// TODO: add compact view (today + task name)
 impl ReportView {
     pub fn new(items: Vec<(String, Vec<TimeDelta>)>, weekday: Weekday) -> Self {
         ReportView { items, weekday }

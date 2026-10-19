@@ -1,4 +1,3 @@
-
 use crossterm::event::Event;
 use ratatui::{
     buffer::Buffer,
@@ -102,13 +101,13 @@ impl ManagerViewState {
                 tasks_manager
                     .get_task_mut(&task_ids)
                     .and_then(|t| Some(t.track()));
-                DailiesAppEvent::FreezeTab
+                DailiesAppEvent::None
             }
             ManagerViewEvent::CompleteTask(task_ids) => {
                 tasks_manager
                     .get_task_mut(&task_ids)
                     .and_then(|t| Some(t.toggle_completed()));
-                DailiesAppEvent::FreezeTab
+                DailiesAppEvent::None
             }
             ManagerViewEvent::DeleteTask(task_ids) => {
                 if let Some(task) = tasks_manager.get_task(&task_ids) {
@@ -120,8 +119,7 @@ impl ManagerViewState {
                     self.window =
                         ManagerViewWindow::DeleteTaskView(task_ids, ConfirmViewState::new(message));
                     DailiesAppEvent::FreezeTab
-                }
-                else {
+                } else {
                     DailiesAppEvent::None
                 }
             }
@@ -149,9 +147,7 @@ impl ManagerViewState {
                 self.window = ManagerViewWindow::ListView;
                 DailiesAppEvent::UnFreezeTab
             }
-            ManagerViewEvent::None | _ => {
-                DailiesAppEvent::None
-            }
+            ManagerViewEvent::None | _ => DailiesAppEvent::None,
         }
     }
 }
