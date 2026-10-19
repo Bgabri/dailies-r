@@ -1,4 +1,5 @@
 use chrono::{TimeDelta, Weekday};
+use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Rect},
@@ -6,6 +7,8 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Row, StatefulWidget, Table, TableState},
 };
+
+use crate::view::dailies_app::DailiesAppEvent;
 
 pub struct ReportViewState {
     table_state: TableState,
@@ -15,6 +18,16 @@ impl ReportViewState {
     pub fn new() -> Self {
         ReportViewState {
             table_state: TableState::default(),
+        }
+    }
+
+    pub fn handle_events(&mut self, event: Event) -> DailiesAppEvent {
+        match event {
+            Event::Key(KeyEvent {
+                code: KeyCode::Char('q'),
+                ..
+            }) => DailiesAppEvent::Exit,
+            _ => DailiesAppEvent::None,
         }
     }
 }
@@ -48,9 +61,7 @@ impl ReportView {
             cells.push(line);
         }
 
-        cells[today] = Span::from("Today")
-            .bold()
-            .into_right_aligned_line();
+        cells[today] = Span::from("Today").bold().into_right_aligned_line();
 
         cells.push(Line::from("Task Name"));
         Row::new(cells).gray().reversed()
@@ -85,7 +96,7 @@ impl ReportView {
 
         for (index, (task_name, daily_times)) in items.iter().enumerate() {
             let mut row = Self::make_table_row(task_name, daily_times, today);
-            if (index % 2) == 0 {
+            if (index % 2) == 1 {
                 row = row.style(Style::default().bg(Color::DarkGray));
             }
             rows.push(row);

@@ -12,7 +12,8 @@ use ratatui::{
 };
 
 use crate::{
-    model::{tasks_manager::TasksManager, window_tracker::WindowTracker}, view::{
+    model::{tasks_manager::TasksManager, window_tracker::WindowTracker},
+    view::{
         report_view::{ReportView, ReportViewState},
         task_manager_view::{ManagerView, ManagerViewState},
     },
@@ -129,7 +130,7 @@ impl DailiesApp {
             DailiesAppWindow::ManagerTab => self
                 .manager_view_state
                 .handle_events(event, &mut self.tasks_manager),
-            DailiesAppWindow::ReportTab => DailiesAppEvent::None,
+            DailiesAppWindow::ReportTab => self.report_view_state.handle_events(event),
         };
 
         self.tasks_manager.save_tasks();

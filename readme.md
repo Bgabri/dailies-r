@@ -7,18 +7,21 @@
   - [x] list tasks
   - [ ] add/edit task
     - [x] name/ description
-    - [ ] tags
     - [ ] goals
   - [ ] move task
   - [x] complete task
   - [x] track task
-    - [-] auto track process matching
+    - [x] auto track process matching
   - [x] delete task
-  - [ ] time spent overview/ task analysis
-    - [ ] stacked
+  - [ ] time spent overview
+    - [x] week overview report
   - [ ] local tasks (visible only in given dir)
   - [ ] task info?/analysis
+  - [ ] navigation instructions
 
 - [ ] checkstyle
 - [ ] docs
 - [ ] consistent errors
+
+
+

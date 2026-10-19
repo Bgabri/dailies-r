@@ -1,6 +1,10 @@
 use crossterm::event::{Event, KeyCode, KeyEvent};
 use ratatui::{
-    buffer::Buffer, layout::{self, Constraint, Flex, Layout, Rect}, style::{Color, Style, Stylize}, text::Span, widgets::{StatefulWidget, Widget},
+    buffer::Buffer,
+    layout::{self, Constraint, Flex, Layout, Rect},
+    style::{Color, Style, Stylize},
+    text::Span,
+    widgets::{StatefulWidget, Widget},
 };
 use ratatui_textarea::TextArea;
 use tui_tree_widget::Block;
@@ -191,6 +195,29 @@ impl EditTaskView {
     pub fn new() -> Self {
         EditTaskView {}
     }
+
+    fn render_associations(area: Rect, buf: &mut Buffer, state: &mut EditTaskViewState) {
+        let association_layout = Layout::default()
+            .flex(Flex::SpaceBetween)
+            .direction(layout::Direction::Horizontal)
+            .constraints(vec![
+                Constraint::Min(5);
+                state.association_text_areas.len() + 1
+            ])
+            .split(area);
+        let mut add_association = Span::from(" [+] ");
+        if state.focus == EditFocus::AddAssociation {
+            add_association = add_association.blue().bg(Color::Black);
+        }
+        add_association.render(association_layout[association_layout.len() - 1], buf);
+
+        for (i, association_text_area) in state.association_text_areas.iter_mut().enumerate() {
+            if i % 2 == 0 {
+                association_text_area.set_block(Block::default().dark_gray());
+            }
+            association_text_area.render(association_layout[i], buf);
+        }
+    }
 }
 
 impl StatefulWidget for &mut EditTaskView {
@@ -204,26 +231,7 @@ impl StatefulWidget for &mut EditTaskView {
         state.name_text_area.render(layout[0], buf);
         state.description_text_area.render(layout[1], buf);
 
-        let association_layout = Layout::default()
-            .flex(
-                Flex::SpaceBetween
-            )
-            .direction(layout::Direction::Horizontal)
-            .constraints(vec![
-                Constraint::Min(5);
-                state.association_text_areas.len() + 1
-            ])
-            .split(layout[2]);
-        let mut add_association = Span::from(" [+] ");
-        if state.focus == EditFocus::AddAssociation {
-            add_association =
-                add_association.style(Style::default().bg(Color::Black).fg(Color::Blue));
-        }
-        add_association.render(association_layout[association_layout.len() - 1], buf);
-
-        for (i, association_text_area) in state.association_text_areas.iter_mut().enumerate() {
-            association_text_area.render(association_layout[i], buf);
-        }
+        EditTaskView::render_associations(layout[2], buf, state);
     }
 }
 

@@ -225,6 +225,7 @@ impl Task {
         None
     }
 
+    // TODO: fix double counting of overlapping parent/child sessions
     pub fn time_spent_recursive(
         &self,
         start: DateTime<Local>,
