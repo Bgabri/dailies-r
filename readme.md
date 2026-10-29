@@ -16,12 +16,20 @@
   - [ ] time spent overview
     - [x] week overview report
   - [ ] local tasks (visible only in given dir)
-  - [ ] task info?/analysis
+  - [ ] task info?/analysis (total time, weakly average)
   - [ ] navigation instructions
+  - [ ] big timer
+  - [ ] gantt chart
+
+- [ ] archiving
+
+- [ ] cli
+  - [ ] start with fully open tree
+  - [ ] report view level
+  - [ ] tracking debounce
 
 - [ ] checkstyle
 - [ ] docs
 - [ ] consistent errors
-
-
+  - [ ] error handling
 

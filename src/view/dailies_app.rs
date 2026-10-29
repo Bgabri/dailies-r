@@ -45,12 +45,12 @@ pub struct DailiesApp {
 }
 
 impl DailiesApp {
-    pub fn new(tasks_manager: TasksManager) -> Self {
+    pub fn new(tasks_manager: TasksManager, window_tracker: WindowTracker) -> Self {
         DailiesApp {
             window: DailiesAppWindow::ManagerTab,
             manager_view_state: ManagerViewState::new(),
             report_view_state: ReportViewState::new(),
-            window_tracker: WindowTracker::new(),
+            window_tracker,
             tasks_manager,
             exit: false,
             frozen: false,
