@@ -7,6 +7,8 @@ use clap::{Parser, Subcommand};
 pub struct DailiesArgs {
     #[command(subcommand)]
     pub command: Option<Subcommands>,
+
+
 }
 
 #[derive(Subcommand, Debug)]

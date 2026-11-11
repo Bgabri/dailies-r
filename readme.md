@@ -12,6 +12,7 @@
   - [x] complete task
   - [x] track task
     - [x] auto track process matching
+    - [ ] heartbeat
   - [x] delete task
   - [ ] time spent overview
     - [x] week overview report

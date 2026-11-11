@@ -45,7 +45,6 @@ impl<'a> TasksTreeViewState {
             KeyCode::Char('c' | 'C') => {
                 return ManagerViewEvent::CompleteTask(self.get_selected());
             }
-
             // navigation
             KeyCode::Enter | KeyCode::Char('\n') => self.tree_state.toggle_selected(),
             KeyCode::Left => self.tree_state.key_left(),
@@ -82,6 +81,7 @@ impl<'a> TasksTreeView<'a> {
             items: Self::items(tasks),
         }
     }
+    
     fn tasks_line(task: &Task) -> Line<'_> {
         let mut line: Line;
         if task.in_session() {

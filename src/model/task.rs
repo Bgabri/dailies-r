@@ -225,7 +225,9 @@ impl Task {
         None
     }
 
-    // TODO: fix double counting of overlapping parent/child sessions
+    /// Calculates the total time spent on this task and all its subtasks 
+    /// recursively within the given time range.
+    /// overlapping parent/child sessions are both individually counted
     pub fn time_spent_recursive(
         &self,
         start: DateTime<Local>,
@@ -260,6 +262,27 @@ impl Task {
             let overlap_end = session_end.min(end);
 
             total_duration = total_duration + (overlap_end - overlap_start);
+        }
+
+        total_duration
+    }
+
+    pub fn total_time_spent(&self) -> chrono::Duration {
+        let mut total_duration = chrono::Duration::zero();
+
+        for session in &self.sessions {
+            let session_end = session.end.unwrap_or_else(|| chrono::Local::now());
+            total_duration = total_duration + (session_end - session.start);
+        }
+
+        total_duration
+    }
+
+    pub fn total_time_spent_recursive(&self) -> chrono::Duration {
+        let mut total_duration = self.total_time_spent();
+
+        for subtask in &self.subtasks {
+            total_duration = total_duration + subtask.total_time_spent_recursive();
         }
 
         total_duration
