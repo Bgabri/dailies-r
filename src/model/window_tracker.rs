@@ -2,25 +2,37 @@ use std::time::{Duration, Instant};
 
 use uuid::Uuid;
 
-use crate::model::{tasks_manager, tracking_interface::TrackingInterface};
+use crate::model::{
+    tasks_manager,
+    tracking_interface::{TrackingInterface, default_tracking_interface},
+};
 
-#[cfg(not(debug_assertions))]
-const DEBOUNCE: Duration = Duration::from_secs(60);
-
-#[cfg(debug_assertions)]
-const DEBOUNCE: Duration = Duration::from_secs(5);
 
 pub struct WindowTracker {
     activated_tasks: Vec<(Uuid, Instant)>,
     tracking_interface: Box<dyn TrackingInterface>,
+    debounce: Duration,
 }
 
 impl WindowTracker {
-    pub fn new(interface: Box<dyn TrackingInterface>) -> Self {
+    pub fn default() -> Self {
+        WindowTracker {
+            activated_tasks: Vec::new(),
+            tracking_interface: default_tracking_interface(),
+            debounce: Duration::from_secs(60),
+        }
+    }
+
+    pub fn new(interface: Box<dyn TrackingInterface>, debounce: u64) -> Self {
         WindowTracker {
             activated_tasks: Vec::new(),
             tracking_interface: interface,
+            debounce: Duration::from_secs(debounce),
         }
+    }
+    pub fn with_debounce(mut self, debounce: u64) -> Self {
+        self.debounce = Duration::from_secs(debounce);
+        self
     }
 
     pub fn get_active_window(&self) -> Option<String> {
@@ -47,11 +59,11 @@ impl WindowTracker {
                     if !task.in_session() {
                         task.start_session();
                     }
-                } else if now.duration_since(*last_activated_at) >= DEBOUNCE
+                } else if now.duration_since(*last_activated_at) >= self.debounce
                     || task
                         .elapsed_session_time()
                         .to_std()
-                        .map_or(false, |d| d <= DEBOUNCE)
+                        .map_or(false, |d| d <= self.debounce)
                 {
                     task.end_session();
                 } else {

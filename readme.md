@@ -26,8 +26,7 @@
 
 - [ ] cli
   - [ ] start with fully open tree
-  - [ ] report view level
-  - [ ] tracking debounce
+  - [x] tracking debounce
 
 - [ ] checkstyle
 - [ ] docs

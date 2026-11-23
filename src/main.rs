@@ -14,15 +14,18 @@ fn main() -> io::Result<()> {
     let args = DailiesArgs::get_args();
     let tasks_manager = TasksManager::new();
 
-    let window_tracker = WindowTracker::new(default_tracking_interface());
-
     match args.command {
         Some(Subcommands::Interactive) | None => {
-            let mut app = DailiesApp::new(tasks_manager, window_tracker);
+            let window_tracker = if !args.no_auto_track {
+                Some(WindowTracker::default().with_debounce(args.debounce))
+            } else {
+                None
+            };
+            let mut app = DailiesApp::new(args, tasks_manager, window_tracker);
             ratatui::run(|term| app.run(term))
         }
         Some(Subcommands::Windows) => {
-            let open_windows = window_tracker.get_open_windows();
+            let open_windows = WindowTracker::default().get_open_windows();
             for window in open_windows {
                 println!("'{}'", window);
             }

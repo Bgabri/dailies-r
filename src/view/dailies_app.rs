@@ -14,6 +14,7 @@ use ratatui::{
 use crate::{
     model::{tasks_manager::TasksManager, window_tracker::WindowTracker},
     view::{
+        dailies_cli::DailiesArgs,
         report_view::{ReportView, ReportViewState},
         task_manager_view::{ManagerView, ManagerViewState},
     },
@@ -35,31 +36,40 @@ pub enum DailiesAppWindow {
 pub struct DailiesApp {
     tasks_manager: TasksManager,
     window: DailiesAppWindow,
-    window_tracker: WindowTracker,
+    window_tracker: Option<WindowTracker>,
 
     manager_view_state: ManagerViewState,
     report_view_state: ReportViewState,
 
     frozen: bool,
     exit: bool,
+
+    settings: DailiesArgs,
 }
 
 impl DailiesApp {
-    pub fn new(tasks_manager: TasksManager, window_tracker: WindowTracker) -> Self {
+    pub fn new(
+        settings: DailiesArgs,
+        tasks_manager: TasksManager,
+        window_tracker: Option<WindowTracker>,
+    ) -> Self {
         DailiesApp {
             window: DailiesAppWindow::ManagerTab,
             manager_view_state: ManagerViewState::new(),
             report_view_state: ReportViewState::new(),
-            window_tracker,
+            window_tracker: window_tracker,
             tasks_manager,
             exit: false,
             frozen: false,
+            settings,
         }
     }
 
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while !self.exit {
-            self.window_tracker.track_tasks(&mut self.tasks_manager);
+            if let Some(ref mut tracker) = self.window_tracker {
+                tracker.track_tasks(&mut self.tasks_manager);
+            }
             self.handle_events()?;
             terminal.draw(|frame| self.draw(frame))?;
         }
@@ -95,7 +105,7 @@ impl DailiesApp {
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
-        let frame_timeout = Duration::from_secs_f64(1.0);
+        let frame_timeout = Duration::from_millis(self.settings.refresh);
         if !event::poll(frame_timeout)? {
             return Ok(());
         }
