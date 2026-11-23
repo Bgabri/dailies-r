@@ -29,7 +29,7 @@
             pkgs.dbus.dev
             pkgs.pkg-config
           ];
-          pname = "dailies-r";
+          pname = "dailies";
           src = ./.;
         };
       }

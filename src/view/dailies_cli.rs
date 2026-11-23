@@ -1,8 +1,18 @@
 use clap::{Parser, Subcommand};
 
-/// A tree based task tracking and management system
+/// A, tree based, task tracking and management system.
 #[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[command(version, about,after_help = "Controls:
+  arrow keys, tab  navigation
+  q                quit
+  a                add task
+  e                edit task
+  d                delete task
+  c                complete task
+  space            track task
+  enter            confirm selection
+  esc              cancel selection"
+)]
 pub struct DailiesArgs {
     #[command(subcommand)]
     pub command: Option<Subcommands>,
