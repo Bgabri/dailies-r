@@ -53,9 +53,13 @@ impl DailiesApp {
         tasks_manager: TasksManager,
         window_tracker: Option<WindowTracker>,
     ) -> Self {
+        let mut manager_view_state = ManagerViewState::new();
+        if settings.open {
+            manager_view_state.open_tree(tasks_manager.get_tasks());
+        }
         DailiesApp {
             window: DailiesAppWindow::ManagerTab,
-            manager_view_state: ManagerViewState::new(),
+            manager_view_state,
             report_view_state: ReportViewState::new(),
             window_tracker: window_tracker,
             tasks_manager,

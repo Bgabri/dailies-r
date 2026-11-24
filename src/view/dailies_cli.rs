@@ -1,10 +1,12 @@
-use chrono::{NaiveDate};
+use chrono::NaiveDate;
 use clap::{Parser, Subcommand};
 
 /// A, tree based, task tracking and management system.
 #[derive(Parser, Debug)]
-#[command(version, about,
-  after_help = "Controls:
+#[command(
+    version,
+    about,
+    after_help = "Controls:
   arrow keys, tab  navigation
   q                quit
   a                add task
@@ -42,6 +44,10 @@ pub struct DailiesArgs {
     /// run without saving
     #[arg(short, long)]
     pub dry: bool,
+
+    /// start with all tasks opened
+    #[arg(short, long)]
+    pub open: bool,
 }
 
 #[derive(Subcommand, Debug)]

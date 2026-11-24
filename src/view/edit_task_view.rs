@@ -205,6 +205,7 @@ impl EditTaskView {
                 state.association_text_areas.len() + 1
             ])
             .split(area);
+
         let mut add_association = Span::from(" [+] ");
         if state.focus == EditFocus::AddAssociation {
             add_association = add_association.blue().bg(Color::Black);
@@ -212,8 +213,8 @@ impl EditTaskView {
         add_association.render(association_layout[association_layout.len() - 1], buf);
 
         for (i, association_text_area) in state.association_text_areas.iter_mut().enumerate() {
-            if i % 2 == 0 {
-                association_text_area.set_block(Block::default().dark_gray());
+            if i % 2 == 0 && state.focus != EditFocus::Association(i) {
+                association_text_area.set_block(Block::default().gray());
             }
             association_text_area.render(association_layout[i], buf);
         }

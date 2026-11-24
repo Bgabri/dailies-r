@@ -23,6 +23,27 @@ impl<'a> TasksTreeViewState {
         }
     }
 
+    pub fn open_all(&mut self, tasks: &[Task]) {
+        let mut tree_state = TreeState::default();
+        let mut path = Vec::new();
+
+        Self::open_all_rec(&mut tree_state, tasks, &mut path);
+        self.tree_state = tree_state;
+    }
+
+    fn open_all_rec(state: &mut TreeState<Uuid>, tasks: &[Task], path: &mut Vec<Uuid>) {
+        for task in tasks {
+            path.push(task.id);
+
+            if !task.subtasks.is_empty() {
+                state.open(path.clone());
+                Self::open_all_rec(state, &task.subtasks, path);
+            }
+
+            path.pop();
+        }
+    }
+
     fn get_selected(&mut self) -> Vec<Uuid> {
         self.tree_state.selected().to_vec()
     }

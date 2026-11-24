@@ -37,6 +37,8 @@ Options:
           the downtime length before excluding it from tracking, in minutes [default: 5]
   -d, --dry
           run without saving
+  -o, --open
+          start with all tasks opened
   -h, --help
           Print help
   -V, --version
@@ -75,7 +77,7 @@ Although its mostly useable, it is still missing some desirable features
 
 - [ ] interactive mode
   - [x] list tasks
-  - [ ] add/edit task
+  - [x] add/edit task
     - [x] name/ description
     - [ ] goals
   - [ ] move task
@@ -96,7 +98,7 @@ Although its mostly useable, it is still missing some desirable features
 - [ ] archiving
 
 - [ ] cli
-  - [ ] start with fully open tree
+  - [x] start with fully open tree
   - [x] tracking debounce
   - [ ] config file?
 
