@@ -68,7 +68,7 @@ impl DailiesApp {
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while !self.exit {
             if let Some(ref mut tracker) = self.window_tracker {
-                tracker.track_tasks(&mut self.tasks_manager);
+                tracker.auto_track(&mut self.tasks_manager);
             }
             self.handle_events()?;
             terminal.draw(|frame| self.draw(frame))?;
@@ -143,7 +143,9 @@ impl DailiesApp {
             DailiesAppWindow::ReportTab => self.report_view_state.handle_events(event),
         };
 
-        self.tasks_manager.save_tasks();
+        if !self.settings.dry {
+            self.tasks_manager.save_tasks();
+        }
 
         self.transition(app_event);
 

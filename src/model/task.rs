@@ -3,6 +3,7 @@ use std::{fmt::Debug, hash, path::PathBuf};
 use chrono::{DateTime, Duration, Local};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Session {
@@ -22,7 +23,7 @@ pub enum TaskTag {
 #[serde(default)]
 #[derive(Default)]
 pub struct Task {
-    pub id: uuid::Uuid,
+    pub id: Uuid,
     pub name: String,
     pub description: String,
 
@@ -169,21 +170,25 @@ impl Task {
         out
     }
 
-    pub fn iter_tree(&self, depth: i32, f: fn(&Task, depth: i32) -> bool) {
-        if !f(self, depth) {
+    pub fn iter_tree<F: FnMut(&Task, Vec<Uuid>) -> bool>(&self, ids: Vec<Uuid>, f: &mut F) {
+        if !f(self, vec![self.id]) {
             return;
         }
         for subtask in &self.subtasks {
-            subtask.iter_tree(depth + 1, f);
+            let mut new_ids = ids.clone();
+            new_ids.push(subtask.id);
+            subtask.iter_tree(new_ids, f);
         }
     }
 
-    pub fn iter_tree_mut<F: FnMut(&mut Task, i32) -> bool>(&mut self, depth: i32, f: &mut F) {
-        if !f(self, depth) {
+    pub fn iter_tree_mut<F: FnMut(&mut Task, Vec<Uuid>) -> bool>(&mut self, ids: Vec<Uuid>, f: &mut F) {
+        if !f(self, ids.clone()) {
             return;
         }
         for subtask in &mut self.subtasks {
-            subtask.iter_tree_mut(depth + 1, f);
+            let mut new_ids = ids.clone();
+            new_ids.push(subtask.id);
+            subtask.iter_tree_mut(new_ids, f);
         }
     }
 
@@ -195,7 +200,7 @@ impl Task {
         tasks
     }
 
-    pub fn get_subtask(&self, ids: &[uuid::Uuid]) -> Option<&Task> {
+    pub fn get_subtask(&self, ids: &[Uuid]) -> Option<&Task> {
         if ids.len() == 0 {
             return None;
         }
@@ -212,7 +217,7 @@ impl Task {
         None
     }
 
-    pub fn get_subtask_mut(&mut self, ids: &[uuid::Uuid]) -> Option<&mut Task> {
+    pub fn get_subtask_mut(&mut self, ids: &[Uuid]) -> Option<&mut Task> {
         if ids.len() == 0 {
             return None;
         }

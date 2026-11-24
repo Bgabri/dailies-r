@@ -1,8 +1,10 @@
+use chrono::{NaiveDate};
 use clap::{Parser, Subcommand};
 
 /// A, tree based, task tracking and management system.
 #[derive(Parser, Debug)]
-#[command(version, about,after_help = "Controls:
+#[command(version, about,
+  after_help = "Controls:
   arrow keys, tab  navigation
   q                quit
   a                add task
@@ -17,13 +19,13 @@ pub struct DailiesArgs {
     #[command(subcommand)]
     pub command: Option<Subcommands>,
 
-    /// the refresh rate of the application in milliseconds
-    #[arg(short, long, default_value_t = 1_000)]
+    /// the refresh rate of the application, in milliseconds
+    #[arg(short = 'R', long, default_value_t = 1_000)]
     pub refresh: u64,
 
-    /// the day to generate the report for
+    /// the day to generate the report for, in the format YYYY-MM-DD
     #[arg(short, long)]
-    pub day: Option<String>,
+    pub report: Option<NaiveDate>,
 
     /// disables auto tracking of the tasks
     #[arg(short, long)]
@@ -36,6 +38,10 @@ pub struct DailiesArgs {
     /// the downtime length before excluding it from tracking, in minutes
     #[arg(short = 'c', long, default_value_t = 5)]
     pub downtime_interval: u32,
+
+    /// run without saving
+    #[arg(short, long)]
+    pub dry: bool,
 }
 
 #[derive(Subcommand, Debug)]

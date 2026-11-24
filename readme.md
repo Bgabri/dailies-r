@@ -25,11 +25,22 @@ Commands:
   help         Print this message or the help of the given subcommand(s)
 
 Options:
-  -n, --no-auto-track        disables auto tracking of the tasks
-  -d, --debounce <DEBOUNCE>  the number of seconds to wait before starting or stopping a task session
-  -r, --refresh <REFRESH>    the refresh rate of the application in milliseconds
-  -h, --help                 Print help
-  -V, --version              Print version
+  -R, --refresh <REFRESH>
+          the refresh rate of the application, in milliseconds [default: 1000]
+  -r, --report <REPORT>
+          the day to generate the report for, in the format YYYY-MM-DD
+  -n, --no-auto-track
+          disables auto tracking of the tasks
+  -g, --grace <GRACE>
+          the number of seconds to wait before starting or stopping a task session [default: 5]
+  -c, --downtime-interval <DOWNTIME_INTERVAL>
+          the downtime length before excluding it from tracking, in minutes [default: 5]
+  -d, --dry
+          run without saving
+  -h, --help
+          Print help
+  -V, --version
+          Print version
 
 Controls:
   arrow keys, tab  navigation

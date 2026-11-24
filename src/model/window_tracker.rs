@@ -8,7 +8,7 @@ use crate::model::{
 };
 
 pub struct WindowTracker {
-    tracked_tasks: Vec<(Uuid, DateTime<Local>)>,
+    tracked_tasks: Vec<(Vec<Uuid>, DateTime<Local>)>,
     tracking_interface: Box<dyn TrackingInterface>,
     grace: Duration,
 
@@ -18,7 +18,7 @@ pub struct WindowTracker {
 
 impl WindowTracker {
     pub fn default() -> Self {
-        Self::new(default_tracking_interface(), 60, 300)
+        Self::new(default_tracking_interface(), 60, 5)
     }
 
     pub fn new(interface: Box<dyn TrackingInterface>, grace: i64, heartbeat_interval: i64) -> Self {
@@ -27,7 +27,7 @@ impl WindowTracker {
             tracking_interface: interface,
             grace: Duration::seconds(grace),
             last_pulse: Local::now(),
-            heartbeat_interval: Duration::seconds(heartbeat_interval),
+            heartbeat_interval: Duration::minutes(heartbeat_interval),
         }
     }
 
@@ -49,55 +49,65 @@ impl WindowTracker {
     }
 
     fn remove_downtime(&mut self, tasks_manager: &mut tasks_manager::TasksManager) {
-        tasks_manager.iter_tree_mut(&mut |task, _| {
-            let active_since = self.tracked_tasks.iter().find(|(id, _)| *id == task.id);
-            if let Some(_) = active_since {
+        for (ids, _) in self.tracked_tasks.iter_mut() {
+            if let Some(task) = tasks_manager.get_task_mut(&ids) {
                 task.end_session_at(self.last_pulse);
                 task.start_session();
+            };
+        }
+    }
+
+    fn check_tracked_tasks(&mut self, tasks_manager: &mut tasks_manager::TasksManager) {
+        let now = Local::now();
+        let active_window = self.get_active_window();
+
+        self.tracked_tasks.retain_mut(|(ids, last_active_at)| {
+            let Some(task) = tasks_manager.get_task_mut(&ids) else {
+                return false;
+            };
+            let is_active = active_window
+                .as_deref()
+                .is_some_and(|w| task.is_associated(w));
+
+            let grace_surpassed = now - *last_active_at >= self.grace;
+            let grace_active = task.elapsed_session_time() > self.grace;
+
+            if is_active {
+                *last_active_at = now;
+            } else if grace_surpassed || !grace_active {
+                task.end_session();
+                return false;
             }
+
             true
         });
     }
 
-    pub fn track_tasks(&mut self, tasks_manager: &mut tasks_manager::TasksManager) {
+    fn track_tasks(&mut self, tasks_manager: &mut tasks_manager::TasksManager) {
+        let Some(active_window) = self.get_active_window() else {
+            return;
+        };
+
+        tasks_manager.iter_tree_mut(&mut |task, ids| {
+            let is_active = task.is_associated(&active_window);
+            if is_active && !task.in_session() {
+                self.tracked_tasks.push((ids, Local::now()));
+                task.start_session();
+            }
+
+            true
+        });
+    }
+
+    pub fn auto_track(&mut self, tasks_manager: &mut tasks_manager::TasksManager) {
         let now = Local::now();
-        let active_window = self.get_active_window();
-        let mut newly_tracked_tasks = Vec::new();
 
         if now - self.last_pulse >= self.heartbeat_interval {
             self.remove_downtime(tasks_manager);
         }
         self.last_pulse = now;
 
-        tasks_manager.iter_tree_mut(&mut |task, _| {
-            let is_active = active_window
-                .as_ref()
-                .is_some_and(|w| task.is_associated(&w));
-
-            let active_since = self.tracked_tasks.iter().find(|(id, _)| *id == task.id);
-
-            if let Some((_, last_activated_at)) = active_since {
-                let grace_surpassed = now - *last_activated_at >= self.grace;
-                let grace_active = task.elapsed_session_time() > self.grace;
-
-                if is_active {
-                    newly_tracked_tasks.push((task.id, now));
-                    if !task.in_session() {
-                        task.start_session();
-                    }
-                } else if grace_surpassed || !grace_active {
-                    task.end_session();
-                } else {
-                    newly_tracked_tasks.push((task.id, *last_activated_at));
-                }
-            } else if is_active && !task.in_session() {
-                newly_tracked_tasks.push((task.id, now));
-                task.start_session();
-            }
-
-            true
-        });
-
-        self.tracked_tasks = newly_tracked_tasks;
+        self.check_tracked_tasks(tasks_manager);
+        self.track_tasks(tasks_manager);
     }
 }

@@ -81,15 +81,15 @@ impl TasksManager {
         &self.tasks
     }
 
-    pub fn iter_tree(&self, f: fn(&Task, depth: i32) -> bool) {
+    pub fn iter_tree<F: FnMut(&Task, Vec<Uuid>) -> bool>(&self, f: &mut F) {
         for task in &self.tasks {
-            task.iter_tree(0, f);
+            task.iter_tree(vec![task.id], f);
         }
     }
 
-    pub fn iter_tree_mut<F: FnMut(&mut Task, i32) -> bool>(&mut self, f: &mut F) {
+    pub fn iter_tree_mut<F: FnMut(&mut Task, Vec<Uuid>) -> bool>(&mut self, f: &mut F) {
         for task in &mut self.tasks {
-            task.iter_tree_mut(0, f);
+            task.iter_tree_mut(vec![task.id], f);
         }
     }
 
