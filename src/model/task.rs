@@ -1,6 +1,6 @@
 use std::{fmt::Debug, hash, path::PathBuf};
 
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Duration, Local};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
@@ -44,7 +44,7 @@ impl Task {
             id: uuid::Uuid::new_v4(),
             name,
             description,
-            created_at: chrono::Local::now(),
+            created_at: Local::now(),
             ..Default::default()
         }
     }
@@ -70,16 +70,20 @@ impl Task {
             return;
         }
         let session = Session {
-            start: chrono::Local::now(),
+            start: Local::now(),
             end: None,
         };
         self.sessions.push(session);
     }
 
-    pub fn end_session(&mut self) {
+    pub fn end_session_at(&mut self, end_time: DateTime<Local>) {
         if let Some(session) = self.sessions.last_mut() {
-            session.end = Some(chrono::Local::now());
+            session.end = Some(end_time);
         }
+    }
+
+    pub fn end_session(&mut self) {
+        self.end_session_at(Local::now());
     }
 
     pub fn track(&mut self) -> bool {
@@ -92,21 +96,21 @@ impl Task {
         }
     }
 
-    pub fn elapsed_session_time(&self) -> chrono::Duration {
+    pub fn elapsed_session_time(&self) -> Duration {
         if let Some(session) = self.sessions.last() {
             if let Some(end) = session.end {
                 return end - session.start;
             } else {
-                return chrono::Local::now() - session.start;
+                return Local::now() - session.start;
             }
         }
 
-        chrono::Duration::zero()
+        Duration::zero()
     }
 
-    pub fn elapsed_daily_time(&self) -> chrono::Duration {
-        let today = chrono::Local::now().date_naive();
-        let mut total_duration = chrono::Duration::zero();
+    pub fn elapsed_daily_time(&self) -> Duration {
+        let today = Local::now().date_naive();
+        let mut total_duration = Duration::zero();
 
         for session in &self.sessions {
             let session_date = session.start.date_naive();
@@ -114,7 +118,7 @@ impl Task {
                 if let Some(end) = session.end {
                     total_duration = total_duration + (end - session.start);
                 } else {
-                    total_duration = total_duration + (chrono::Local::now() - session.start);
+                    total_duration = total_duration + (Local::now() - session.start);
                 }
             }
         }
@@ -126,7 +130,7 @@ impl Task {
         if self.is_completed() {
             self.ended_at = None;
         } else {
-            self.ended_at = Some(chrono::Local::now());
+            self.ended_at = Some(Local::now());
         }
         self.end_session();
     }
@@ -232,7 +236,7 @@ impl Task {
         &self,
         start: DateTime<Local>,
         end: DateTime<Local>,
-    ) -> chrono::Duration {
+    ) -> Duration {
         let mut total_duration = self.time_spent(start, end);
 
         for subtask in &self.subtasks {
@@ -242,12 +246,12 @@ impl Task {
         total_duration
     }
 
-    pub fn time_spent(&self, start: DateTime<Local>, end: DateTime<Local>) -> chrono::Duration {
-        let mut total_duration = chrono::Duration::zero();
+    pub fn time_spent(&self, start: DateTime<Local>, end: DateTime<Local>) -> Duration {
+        let mut total_duration = Duration::zero();
 
         for session in self.sessions.iter().rev() {
             let session_start = session.start;
-            let session_end = session.end.unwrap_or_else(|| chrono::Local::now());
+            let session_end = session.end.unwrap_or_else(|| Local::now());
 
             if session_end < start {
                 // sessions is sorted, so we can break early
@@ -267,18 +271,18 @@ impl Task {
         total_duration
     }
 
-    pub fn total_time_spent(&self) -> chrono::Duration {
-        let mut total_duration = chrono::Duration::zero();
+    pub fn total_time_spent(&self) -> Duration {
+        let mut total_duration = Duration::zero();
 
         for session in &self.sessions {
-            let session_end = session.end.unwrap_or_else(|| chrono::Local::now());
+            let session_end = session.end.unwrap_or_else(|| Local::now());
             total_duration = total_duration + (session_end - session.start);
         }
 
         total_duration
     }
 
-    pub fn total_time_spent_recursive(&self) -> chrono::Duration {
+    pub fn total_time_spent_recursive(&self) -> Duration {
         let mut total_duration = self.total_time_spent();
 
         for subtask in &self.subtasks {

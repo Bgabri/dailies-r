@@ -71,7 +71,7 @@ Although its mostly useable, it is still missing some desirable features
   - [x] complete task
   - [x] track task
     - [x] auto track process matching
-    - [ ] heartbeat
+    - [x] heartbeat
     - [ ] extend support for other os/envs
   - [x] delete task
   - [ ] time spent overview

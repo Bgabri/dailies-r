@@ -5,8 +5,6 @@ mod model;
 mod view;
 
 use crate::model::tasks_manager::TasksManager;
-
-use crate::model::tracking_interface::default_tracking_interface;
 use crate::model::window_tracker::WindowTracker;
 use crate::view::dailies_cli::{DailiesArgs, Subcommands};
 
@@ -17,7 +15,11 @@ fn main() -> io::Result<()> {
     match args.command {
         Some(Subcommands::Interactive) | None => {
             let window_tracker = if !args.no_auto_track {
-                Some(WindowTracker::default().with_debounce(args.debounce))
+                Some(
+                    WindowTracker::default()
+                        .with_grace(args.grace as i64)
+                        .with_heartbeat_interval(args.downtime_interval as i64),
+                )
             } else {
                 None
             };
